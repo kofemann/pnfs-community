@@ -47,7 +47,7 @@ public class ExportPathCreator {
         try {
             return vfs.lookup(inode, name);
         } catch (NoEntException e) {
-            return vfs.create(inode, Stat.Type.DIRECTORY, name, Subjects.ROOT, 0777);
+            return vfs.mkdir(inode, name, Subjects.ROOT, 0777);
         }
     }
 

@@ -50,6 +50,10 @@
     <!--
         FileSystem engine. Currently only Chimera is supported
     -->
+    <bean id="tx-manager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <description>Database transaction manager</description>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
 
      <bean id="liquibase" class="liquibase.integration.spring.SpringLiquibase">
          <property name="dataSource" ref="dataSource" />
@@ -60,6 +64,7 @@
      <bean id="fileSystem" class="org.dcache.chimera.JdbcFs" depends-on="liquibase">
         <description>Chimera Filesystem</description>
         <constructor-arg ref="dataSource" />
+        <constructor-arg ref="tx-manager" />
         <constructor-arg value="${chimera.db.dialect}" />
     </bean>
 

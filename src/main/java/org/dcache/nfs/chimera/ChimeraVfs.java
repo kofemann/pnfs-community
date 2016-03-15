@@ -17,25 +17,29 @@
  * details); if not, write to the Free Software Foundation, Inc.,
  * 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
 package org.dcache.nfs.chimera;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.security.auth.Subject;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.security.auth.Subject;
 import org.dcache.acl.ACE;
 import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.AceType;
 import org.dcache.acl.enums.Who;
 import org.dcache.auth.Subjects;
 import org.dcache.chimera.ChimeraFsException;
-import org.dcache.chimera.DirectoryStreamHelper;
 import org.dcache.chimera.DirNotEmptyHimeraFsException;
+import org.dcache.chimera.DirectoryStreamHelper;
 import org.dcache.chimera.FileExistsChimeraFsException;
 import org.dcache.chimera.FileNotFoundHimeraFsException;
 import org.dcache.chimera.FsInode;
@@ -46,7 +50,15 @@ import org.dcache.chimera.IsDirChimeraException;
 import org.dcache.chimera.JdbcFs;
 import org.dcache.chimera.NotDirChimeraException;
 import org.dcache.chimera.StorageGenericLocation;
-import org.dcache.nfs.status.*;
+import org.dcache.nfs.status.BadOwnerException;
+import org.dcache.nfs.status.ExistException;
+import org.dcache.nfs.status.InvalException;
+import org.dcache.nfs.status.IsDirException;
+import org.dcache.nfs.status.NfsIoException;
+import org.dcache.nfs.status.NoEntException;
+import org.dcache.nfs.status.NotDirException;
+import org.dcache.nfs.status.NotEmptyException;
+import org.dcache.nfs.status.StaleException;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.nfs.v4.acl.Acls;
 import org.dcache.nfs.v4.xdr.aceflag4;
@@ -55,22 +67,23 @@ import org.dcache.nfs.v4.xdr.acetype4;
 import org.dcache.nfs.v4.xdr.nfsace4;
 import org.dcache.nfs.v4.xdr.uint32_t;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
-import static org.dcache.nfs.v4.xdr.nfs4_prot.*;
 import org.dcache.nfs.vfs.AclCheckable;
 import org.dcache.nfs.vfs.DirectoryEntry;
 import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static org.dcache.chimera.FileSystemProvider.StatCacheOption.NO_STAT;
+import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
+import static org.dcache.nfs.v4.xdr.nfs4_prot.*;
 
 /**
  * Interface to a virtual file system.
  */
 public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
 
-    private final static Logger _log = LoggerFactory.getLogger(ChimeraVfs.class);
+    private static final Logger _log = LoggerFactory.getLogger(ChimeraVfs.class);
     private final JdbcFs _fs;
     private final NfsIdMapping _idMapping;
 
@@ -88,7 +101,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public Inode lookup(Inode parent, String path) throws IOException {
         try {
             FsInode parentFsInode = toFsInode(parent);
-            FsInode fsInode = parentFsInode.inodeOf(path);
+            FsInode fsInode = parentFsInode.inodeOf(path, NO_STAT);
             return toInode(fsInode);
         }catch (FileNotFoundHimeraFsException e) {
             throw new NoEntException("Path Do not exist.");
@@ -159,7 +172,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         FsInode from = toFsInode(src);
         FsInode to = toFsInode(dest);
 	try {
-	    return _fs.move(from, oldName, to, newName);
+	    return _fs.rename(_fs.inodeOf(from, oldName, NO_STAT), from, oldName, to, newName);
 	} catch (NotDirChimeraException e) {
 	    throw new NotDirException("not a directory");
 	} catch (FileExistsChimeraFsException e) {
@@ -187,7 +200,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public void remove(Inode parent, String path) throws IOException {
         FsInode parentFsInode = toFsInode(parent);
         try {
-            _fs.remove(parentFsInode, path);
+            _fs.remove(parentFsInode, path, _fs.inodeOf(parentFsInode, path, STAT));
         } catch (FileNotFoundHimeraFsException e) {
             throw new NoEntException("path not found");
         } catch (DirNotEmptyHimeraFsException e) {
@@ -216,12 +229,11 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
 
     @Override
     public Inode parentOf(Inode inode) throws IOException {
-        try {
-            FsInode parent = toFsInode(inode).inodeOf("..");
-            return toInode(parent);
-        } catch (FileNotFoundHimeraFsException e) {
+        FsInode parent = toFsInode(inode).getParent();
+        if (parent == null) {
             throw new NoEntException("no parent");
         }
+        return toInode(parent);
     }
 
     @Override
@@ -249,7 +261,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public Stat getattr(Inode inode) throws IOException {
         FsInode fsInode = toFsInode(inode);
         try {
-            return  fromChimeraStat(fsInode.stat(), fsInode.id());
+            return  fromChimeraStat(fsInode.stat(), fsInode.ino());
         } catch (FileNotFoundHimeraFsException e) {
             throw new NoEntException("Path Do not exist.");
         }
@@ -315,7 +327,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         stat.setGid(pStat.getGid());
         stat.setUid(pStat.getUid());
         stat.setDev(pStat.getDev());
-        stat.setIno(pStat.getIno());
+        stat.setIno(Longs.hashCode(pStat.getIno()));
         stat.setMode(pStat.getMode());
         stat.setNlink(pStat.getNlink());
         stat.setRdev(pStat.getRdev());
@@ -346,9 +358,6 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         }
         if (stat.isDefined(Stat.StatAttribute.DEV)) {
             pStat.setDev(stat.getDev());
-        }
-        if (stat.isDefined(Stat.StatAttribute.INO)) {
-            pStat.setIno(stat.getIno());
         }
         if (stat.isDefined(Stat.StatAttribute.MODE)) {
             pStat.setMode(stat.getMode());
@@ -411,7 +420,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
 
         @Override
         public DirectoryEntry apply(HimeraDirectoryEntry e) {
-            return new DirectoryEntry(e.getName(), toInode(e.getInode()), fromChimeraStat(e.getStat(), e.getInode().id()));
+            return new DirectoryEntry(e.getName(), toInode(e.getInode()), fromChimeraStat(e.getStat(), e.getInode().ino()));
         }
     }
 
@@ -476,7 +485,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
                 id = idMapping.principalToUid(principal);
             }
         }
-        return new ACE(AceType.valueOf(type), flags, mask, who, id, ACE.DEFAULT_ADDRESS_MSK);
+        return new ACE(AceType.valueOf(type), flags, mask, who, id);
     }
 
     @Override
@@ -508,10 +517,10 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
             Who who = ace.getWho();
 
             if ((who == Who.EVERYONE)
-                    || (who == Who.OWNER & Subjects.hasUid(subject, owner))
-                    || (who == Who.OWNER_GROUP & Subjects.hasGid(subject, group))
-                    || (who == Who.GROUP & Subjects.hasGid(subject, ace.getWhoID()))
-                    || (who == Who.USER & Subjects.hasUid(subject, ace.getWhoID()))) {
+                    || (who == Who.OWNER && Subjects.hasUid(subject, owner))
+                    || (who == Who.OWNER_GROUP && Subjects.hasGid(subject, group))
+                    || (who == Who.GROUP && Subjects.hasGid(subject, ace.getWhoID()))
+                    || (who == Who.USER && Subjects.hasUid(subject, ace.getWhoID()))) {
 
                 if (ace.getType() == AceType.ACCESS_DENIED_ACE_TYPE) {
                     return Access.DENY;
