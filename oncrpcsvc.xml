@@ -65,7 +65,6 @@
         <description>Chimera Filesystem</description>
         <constructor-arg ref="dataSource" />
         <constructor-arg ref="tx-manager" />
-        <constructor-arg value="${chimera.db.dialect}" />
     </bean>
 
     <bean id="vfs-intern" class="org.dcache.nfs.chimera.ChimeraVfs">
