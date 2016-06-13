@@ -30,12 +30,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.v4.CompoundContext;
@@ -143,7 +145,15 @@ public class DeviceManager implements NFSv41DeviceManager {
             _log.debug("generating new device: {} ({}) for stateid {}",
                     deviceId, id, stateid);
 
-            deviceAddr = layoutDriver.getDeviceAddress(_knownDataServers);
+            // limit addresses returned to client to the same 'type' as clients own address
+            InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
+            InetSocketAddress[] effectioveAddresses = Stream.of(_knownDataServers)
+                    .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
+                    .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
+                    .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
+                    .toArray(size -> new InetSocketAddress[size]);
+
+            deviceAddr = layoutDriver.getDeviceAddress(effectioveAddresses);
 
             _deviceMap.put(deviceId, deviceAddr);
         }
