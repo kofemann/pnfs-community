@@ -42,7 +42,7 @@
     <!--
         NFSv4.1 pNFS Data Server manager
     -->
-    <bean id="device-manager" class="org.dcache.nfs.v4.DeviceManager">
+    <bean id="device-manager" class="org.dcache.nfs.DeviceManager">
         <description>Device manager</description>
         <property name="dataservers" value="${mds.devices}" />
     </bean>
