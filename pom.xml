@@ -63,7 +63,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>org.dcache.xdr.SpringRunner</mainClass>
+                                    <mainClass>org.dcache.nfs.Main</mainClass>
                                     <packageName>org.dcache.nfs</packageName>
                                     <addExtensions />
                                 </manifest>
