@@ -40,13 +40,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.LayoutUnavailableException;
+import org.dcache.nfs.status.OpenModeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
 import org.dcache.nfs.v4.Layout;
 import org.dcache.nfs.v4.LayoutDriver;
+import org.dcache.nfs.v4.NFS4Client;
+import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
+import org.dcache.nfs.v4.xdr.layoutiomode4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
@@ -123,6 +127,15 @@ public class DeviceManager implements NFSv41DeviceManager {
     public Layout layoutGet(CompoundContext context, Inode inode, int layoutType, int ioMode, stateid4 stateid)
             throws IOException {
 
+        final NFS4Client client = context.getSession().getClient();
+        final NFS4State nfsState = client.state(stateid);
+
+        // setting file size requires open for writing
+//        int shareAccess = context.getStateHandler().getFileTracker().getShareAccess(client, inode, stateid);
+//        if ( (ioMode == layoutiomode4.LAYOUTIOMODE4_RW) && ((shareAccess & nfs4_prot.OPEN4_SHARE_ACCESS_WRITE) == 0)) {
+//            throw new OpenModeException("Invalid open mode");
+//        }
+
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         device_addr4 deviceAddr;
@@ -158,6 +171,18 @@ public class DeviceManager implements NFSv41DeviceManager {
             _deviceMap.put(deviceId, deviceAddr);
         }
 
+
+        final NFS4State layoutStateId = client.createState(client.asStateOwner());
+        nfsState.addDisposeListener(
+                state -> {
+                    try {
+                        client.releaseState(layoutStateId.stateid());
+                    } catch (ChimeraNFSException e) {
+                        _log.warn("can't release layout stateid.: {}", e.getMessage());
+                    }
+                }
+        );
+
         nfs_fh4 fh = new nfs_fh4(context.currentInode().toNfsHandle());
 
         //  -1 is special value, which means entire file
@@ -167,7 +192,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
         layout.lo_content = layoutDriver.getLayoutContent(deviceId, stateid,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh);
 
-        return  new Layout(true, stateid, new layout4[]{layout});
+        return  new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
     }
 
 
