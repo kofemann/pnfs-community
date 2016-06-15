@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.LayoutUnavailableException;
-import org.dcache.nfs.status.OpenModeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
 import org.dcache.nfs.v4.Layout;
@@ -50,7 +49,6 @@ import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
-import org.dcache.nfs.v4.xdr.layoutiomode4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
@@ -130,12 +128,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4Client client = context.getSession().getClient();
         final NFS4State nfsState = client.state(stateid);
 
-        // setting file size requires open for writing
-//        int shareAccess = context.getStateHandler().getFileTracker().getShareAccess(client, inode, stateid);
-//        if ( (ioMode == layoutiomode4.LAYOUTIOMODE4_RW) && ((shareAccess & nfs4_prot.OPEN4_SHARE_ACCESS_WRITE) == 0)) {
-//            throw new OpenModeException("Invalid open mode");
-//        }
-
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         device_addr4 deviceAddr;
@@ -172,7 +164,8 @@ public class DeviceManager implements NFSv41DeviceManager {
         }
 
 
-        final NFS4State layoutStateId = client.createState(client.asStateOwner());
+        final NFS4State layoutStateId = client.createState(client.asStateOwner(), nfsState.getParentState());
+        layoutStateId.bumpSeqid();
         nfsState.addDisposeListener(
                 state -> {
                     try {
