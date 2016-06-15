@@ -73,6 +73,12 @@
         <constructor-arg ref="idmapd"/>
     </bean>
 
+    <bean id="vfs-back" class="org.dcache.nfs.chimera.FsBackendedVfs">
+        <description>Chimera Filesystem</description>
+        <property name="vfs" ref="vfs-intern" />
+        <property name="fsCache" ref="ds-data-pool" />
+    </bean>
+
     <bean id="cache-config" class="org.dcache.nfs.vfs.VfsCacheConfig">
 	<property name="maxEntries" value="${nfs.attribute-cache.size}" />
 	<property name="lifeTime" value="${nfs.attribute-cache.time}" />
@@ -81,7 +87,7 @@
 
     <bean id="vfs" class="org.dcache.nfs.vfs.VfsCache">
         <description>VFS Cache</description>
-        <constructor-arg ref="vfs-intern"/>
+        <constructor-arg ref="vfs-back"/>
 	<constructor-arg ref="cache-config"/>
     </bean>
 
