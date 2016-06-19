@@ -32,7 +32,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -99,15 +102,11 @@ public class DeviceManager implements NFSv41DeviceManager {
     };
 
     /**
-     * Set configures data servers. Each string represents a dataserver
-     * as <code>IP:port</code>
-     * @param servers
+     * Set TCP port number used by data server.
+     * @param port tcp port number.
      */
-    public void setDataservers(String[] servers) {
-        _knownDataServers = new InetSocketAddress[servers.length];
-        for(int i = 0; i < servers.length; i++) {
-            _knownDataServers[i] = InetSocketAddresses.inetAddressOf(servers[i]);
-        }
+    public void setDsPort(int port) throws SocketException {
+        _knownDataServers = getLocalAddresses(port);
     }
 
     private int nextDeviceID() {
@@ -256,5 +255,24 @@ public class DeviceManager implements NFSv41DeviceManager {
             throw new LayoutUnavailableException("Layout type (" + layoutType + ") not supported");
         }
         return layoutDriver;
+    }
+
+    private InetSocketAddress[] getLocalAddresses(int port) throws SocketException {
+        List<InetSocketAddress> localaddresses = new ArrayList<>();
+
+        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+        while (ifaces.hasMoreElements()) {
+            NetworkInterface iface = ifaces.nextElement();
+            if (!iface.isUp()) {
+                continue;
+            }
+
+            Enumeration<InetAddress> addrs = iface.getInetAddresses();
+            while (addrs.hasMoreElements()) {
+                InetAddress addr = addrs.nextElement();
+                localaddresses.add(new InetSocketAddress(addr, port));
+            }
+        }
+        return localaddresses.toArray(new InetSocketAddress[0]);
     }
 }

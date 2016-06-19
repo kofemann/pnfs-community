@@ -44,7 +44,7 @@
     -->
     <bean id="device-manager" class="org.dcache.nfs.DeviceManager">
         <description>Device manager</description>
-        <property name="dataservers" value="${mds.devices}" />
+        <property name="dsPort" value="${ds.port}" />
     </bean>
 
     <!--
