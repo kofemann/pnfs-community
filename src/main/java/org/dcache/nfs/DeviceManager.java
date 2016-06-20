@@ -58,7 +58,6 @@ import org.dcache.nfs.v4.xdr.offset4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.utils.Bytes;
-import org.dcache.utils.net.InetSocketAddresses;
 
 /**
  *
