@@ -161,34 +161,12 @@
         <constructor-arg ref="vfs" />
         <constructor-arg ref="export" />
     </bean>
-    <!--
-        MOUNTD server
-    -->
-    <bean id="mountd" class="org.dcache.nfs.v3.MountServer">
-        <description>Mountd seriver</description>
-        <constructor-arg ref="export" />
-        <constructor-arg ref="vfs" />
-    </bean>
-
-    <!--
-        Embeded RPCBIND.
-
-        It will autodetect if there a system one already enabled.
-    -->
-    <bean id="rpcbind" class="org.dcache.xdr.portmap.OncRpcEmbeddedPortmap" />
 
     <!-- NFSv4 programm -->
     <bean id="nfsv4-programm" class="org.dcache.xdr.OncRpcProgram">
         <description>NFSv4.1 programm number</description>
         <constructor-arg index="0" value="100003" />
         <constructor-arg index="1" value="4" />
-    </bean>
-
-    <!-- mount programm -->
-    <bean id="mount-programm" class="org.dcache.xdr.OncRpcProgram">
-        <description>Mount programm number</description>
-        <constructor-arg index="0" value="100005" />
-        <constructor-arg index="1" value="3" />
     </bean>
 
     <!--
@@ -198,19 +176,18 @@
         <description>Onc RPC service builder for MDS</description>
         <property name="port" value="${mds.port}"/>
         <property name="useTCP" value="true"/>
-        <property name="autoPublish" value="true"/>
+        <property name="autoPublish" value="false"/>
         <property name="enableJmx" value="true"/>
         <property name="useWorkerPool" value="true"/>
     </bean>
 
-    <bean id="oncrpcsvc" class="org.dcache.xdr.OncRpcSvc" depends-on="rpcbind,oncrpcsvc-ds"
+    <bean id="oncrpcsvc" class="org.dcache.xdr.OncRpcSvc" depends-on="oncrpcsvc-ds"
           destroy-method="stop">
         <description>Onc RPC service for MDS</description>
         <constructor-arg ref="oncrpcsvc-builder"/>
         <property name="programs">
             <map>
                 <entry key-ref="nfsv4-programm" value-ref="mds"/>
-                <entry key-ref="mount-programm" value-ref="mountd"/>
             </map>
         </property>
     </bean>
@@ -223,6 +200,7 @@
         <property name="port" value="${ds.port}"/>
         <property name="useTCP" value="true"/>
         <property name="enableJmx" value="true"/>
+        <property name="autoPublish" value="false"/>
         <property name="useWorkerPool" value="true"/>
     </bean>
 
