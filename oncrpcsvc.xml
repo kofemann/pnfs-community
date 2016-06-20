@@ -184,27 +184,11 @@
         <constructor-arg index="1" value="4" />
     </bean>
 
-    <!-- NFSv3 programm -->
-    <bean id="nfsv3-programm" class="org.dcache.xdr.OncRpcProgram">
-        <description>NFSv3 programm number</description>
-        <constructor-arg index="0" value="100003" />
-        <constructor-arg index="1" value="3" />
-    </bean>
-
     <!-- mount programm -->
     <bean id="mount-programm" class="org.dcache.xdr.OncRpcProgram">
         <description>Mount programm number</description>
         <constructor-arg index="0" value="100005" />
         <constructor-arg index="1" value="3" />
-    </bean>
-
-    <!--
-       NFSv3
-    -->
-    <bean id="nfs3" class="org.dcache.nfs.v3.NfsServerV3">
-        <description>NFSv3 server</description>
-        <constructor-arg ref="vfs" />
-        <constructor-arg ref="export" />
     </bean>
 
     <!--
@@ -226,7 +210,6 @@
         <property name="programs">
             <map>
                 <entry key-ref="nfsv4-programm" value-ref="mds"/>
-                <entry key-ref="nfsv3-programm" value-ref="nfs3"/>
                 <entry key-ref="mount-programm" value-ref="mountd"/>
             </map>
         </property>
