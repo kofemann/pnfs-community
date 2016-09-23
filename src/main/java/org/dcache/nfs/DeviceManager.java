@@ -162,7 +162,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         }
 
 
-        final NFS4State layoutStateId = client.createState(client.asStateOwner(), nfsState.getParentState());
+        final NFS4State layoutStateId = client.createState(client.asStateOwner(), nfsState.getOpenState());
         layoutStateId.bumpSeqid();
         nfsState.addDisposeListener(
                 state -> {
