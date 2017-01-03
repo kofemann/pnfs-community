@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2015 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2017 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -24,13 +24,20 @@ import java.io.IOException;
 import org.dcache.auth.Subjects;
 import org.dcache.nfs.status.NoEntException;
 import org.dcache.nfs.vfs.Inode;
-import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+// use jdk.internal.misc.Signal for jdk-9
+import sun.misc.Signal;
 
 /**
  * Class to scan export file and create missing directories
  */
 public class ExportPathCreator {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExportPathCreator.class);
 
     private ExportFile exportFile;
     private VirtualFileSystem vfs;
@@ -52,6 +59,9 @@ public class ExportPathCreator {
     }
 
     public void init() throws IOException {
+
+        registerSignalHandler(exportFile);
+
         Inode root = vfs.getRootInode();
         exportFile.getExports()
                 .map(FsExport::getPath)
@@ -66,5 +76,17 @@ public class ExportPathCreator {
                         }
                     }
                 });
+    }
+
+    @SuppressWarnings("restriction")
+    private static void registerSignalHandler(final ExportFile exports) {
+        Signal.handle(new Signal("HUP"), (Signal signal) -> {
+            try {
+                LOGGER.info("HUP signal received, rescanning exports file.");
+                exports.rescan();
+            } catch (IOException e) {
+                LOGGER.error("Failed to re-read export file: {}", e.getMessage());
+            }
+        });
     }
 }
