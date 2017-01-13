@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2016 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2017 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -162,7 +162,8 @@ public class DeviceManager implements NFSv41DeviceManager {
         }
 
 
-        final NFS4State layoutStateId = client.createState(client.asStateOwner(), nfsState.getOpenState());
+        NFS4State openState = nfsState.getOpenState();
+        final NFS4State layoutStateId = client.createState(openState.getStateOwner(), openState);
         layoutStateId.bumpSeqid();
         nfsState.addDisposeListener(
                 state -> {
