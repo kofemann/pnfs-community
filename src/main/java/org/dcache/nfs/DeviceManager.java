@@ -167,11 +167,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         layoutStateId.bumpSeqid();
         nfsState.addDisposeListener(
                 state -> {
-                    try {
-                        client.releaseState(layoutStateId.stateid());
-                    } catch (ChimeraNFSException e) {
-                        _log.warn("can't release layout stateid.: {}", e.getMessage());
-                    }
+                    // layout removal here!
                 }
         );
 
