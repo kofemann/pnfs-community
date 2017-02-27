@@ -96,8 +96,7 @@ public class DeviceManager implements NFSv41DeviceManager {
      * Array if layout types supported by the door. Put 'default' one first
      */
     private final int[] SUPPORTED_LAYOUT_TYPES = new int[]{
-        layouttype4.LAYOUT4_NFSV4_1_FILES,
-        layouttype4.LAYOUT4_FLEX_FILES
+        layouttype4.LAYOUT4_NFSV4_1_FILES
     };
 
     /**
