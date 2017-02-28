@@ -258,7 +258,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
         while (ifaces.hasMoreElements()) {
             NetworkInterface iface = ifaces.nextElement();
-            if (!iface.isUp()) {
+            if (!iface.isUp() || iface.getName().startsWith("br-")) {
                 continue;
             }
 
