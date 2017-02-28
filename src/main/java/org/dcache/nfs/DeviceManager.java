@@ -149,13 +149,13 @@ public class DeviceManager implements NFSv41DeviceManager {
 
             // limit addresses returned to client to the same 'type' as clients own address
             InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
-            InetSocketAddress[] effectioveAddresses = Stream.of(_knownDataServers)
+            InetSocketAddress[] effectiveAddresses = Stream.of(_knownDataServers)
                     .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
                     .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
                     .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
                     .toArray(size -> new InetSocketAddress[size]);
 
-            deviceAddr = layoutDriver.getDeviceAddress(effectioveAddresses);
+            deviceAddr = layoutDriver.getDeviceAddress(effectiveAddresses);
 
             _deviceMap.put(deviceId, deviceAddr);
         }
