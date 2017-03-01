@@ -83,6 +83,8 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     private InetSocketAddress[] _knownDataServers;
 
+    // we need to return same layout stateid, as long as it's not returned
+    private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
 
     /**
      * Layout type specific driver.
@@ -162,12 +164,19 @@ public class DeviceManager implements NFSv41DeviceManager {
 
 
         NFS4State openState = nfsState.getOpenState();
-        final NFS4State layoutStateId = client.createState(openState.getStateOwner(), openState);
-        nfsState.addDisposeListener(
-                state -> {
-                    // layout removal here!
-                }
-        );
+
+        NFS4State layoutStateId = _openToLayoutStateid.get(openState.stateid());
+        if(layoutStateId == null) {
+            layoutStateId = client.createState(openState.getStateOwner(), openState);
+            _openToLayoutStateid.put(stateid, layoutStateId);
+            nfsState.addDisposeListener(
+                    state -> {
+                        _openToLayoutStateid.remove(openState.stateid());
+                    }
+            );
+        } else {
+            layoutStateId.bumpSeqid();
+        }
 
         nfs_fh4 fh = new nfs_fh4(context.currentInode().toNfsHandle());
 
@@ -217,9 +226,11 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn()
      */
     @Override
-    public void layoutReturn(CompoundContext context, stateid4 stateid) {
-        // I'am fine
+    public void layoutReturn(CompoundContext context, stateid4 stateid) throws ChimeraNFSException {
         _log.debug( "release device for stateid {}", stateid );
+        final NFS4Client client = context.getSession().getClient();
+        final NFS4State layoutState = client.state(stateid);
+        _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
     }
 
     /*
