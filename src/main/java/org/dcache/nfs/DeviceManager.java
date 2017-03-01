@@ -163,7 +163,6 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         NFS4State openState = nfsState.getOpenState();
         final NFS4State layoutStateId = client.createState(openState.getStateOwner(), openState);
-        layoutStateId.bumpSeqid();
         nfsState.addDisposeListener(
                 state -> {
                     // layout removal here!
