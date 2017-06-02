@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2015 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2017 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -19,8 +19,6 @@
  */
 package org.dcache.nfs.chimera;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
 
 import org.dcache.acl.ACE;
 import org.dcache.acl.enums.AceFlags;
@@ -243,7 +242,15 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public List<DirectoryEntry> list(Inode inode) throws IOException {
         FsInode parentFsInode = toFsInode(inode);
         List<HimeraDirectoryEntry> list = DirectoryStreamHelper.listOf(parentFsInode);
-        return Lists.transform(list, new ChimeraDirectoryEntryToVfs());
+
+        // sort the list to preserve the cookie order
+        return list.stream()
+                .map(e -> new DirectoryEntry(e.getName(),
+                    toInode(e.getInode()),
+                    fromChimeraStat(e.getStat(), e.getInode().ino()),
+                    e.getStat().getIno()))
+                .sorted((a, b) -> Long.compare(a.getCookie(), b.getCookie()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -429,14 +436,6 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     @Override
     public NfsIdMapping getIdMapper() {
         return _idMapping;
-    }
-
-    private class ChimeraDirectoryEntryToVfs implements Function<HimeraDirectoryEntry, DirectoryEntry> {
-
-        @Override
-        public DirectoryEntry apply(HimeraDirectoryEntry e) {
-            return new DirectoryEntry(e.getName(), toInode(e.getInode()), fromChimeraStat(e.getStat(), e.getInode().ino()));
-        }
     }
 
     private int typeToChimera(Stat.Type type) {
