@@ -90,7 +90,7 @@ public class DeviceManager implements NFSv41DeviceManager {
      * Layout type specific driver.
      */
     private final Map<Integer, LayoutDriver> _supportedDrivers = ImmutableMap.of(
-            layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(3, 0, new utf8str_mixed("17"), new utf8str_mixed("17")),
+            layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17")),
             layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver()
     );
 
@@ -185,7 +185,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         layout.lo_iomode = ioMode;
         layout.lo_offset = new offset4(0);
         layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
-        layout.lo_content = layoutDriver.getLayoutContent(deviceId, stateid,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh);
+        layout.lo_content = layoutDriver.getLayoutContent(stateid,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
 
         return  new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
     }
