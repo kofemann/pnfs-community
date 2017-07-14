@@ -19,6 +19,7 @@
  */
 package org.dcache.nfs.chimera;
 
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.stream.Collectors;
 
 import org.dcache.acl.ACE;
 import org.dcache.acl.enums.AceFlags;
@@ -56,7 +56,6 @@ import org.dcache.chimera.FsInode_PLOC;
 import org.dcache.chimera.FsInode_PSET;
 import org.dcache.chimera.FsInode_TAG;
 import org.dcache.chimera.FsInode_TAGS;
-import org.dcache.chimera.HimeraDirectoryEntry;
 import org.dcache.chimera.InvalidArgumentChimeraException;
 import org.dcache.chimera.IsDirChimeraException;
 import org.dcache.chimera.JdbcFs;
@@ -78,10 +77,12 @@ import org.dcache.nfs.v4.xdr.aceflag4;
 import org.dcache.nfs.v4.xdr.acemask4;
 import org.dcache.nfs.v4.xdr.acetype4;
 import org.dcache.nfs.v4.xdr.nfsace4;
+import org.dcache.nfs.v4.xdr.verifier4;
 import org.dcache.nfs.v4.xdr.uint32_t;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.AclCheckable;
 import org.dcache.nfs.vfs.DirectoryEntry;
+import org.dcache.nfs.vfs.DirectoryStream;
 import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
@@ -239,18 +240,26 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     }
 
     @Override
-    public List<DirectoryEntry> list(Inode inode) throws IOException {
+    public DirectoryStream list(Inode inode, byte[] verifier, long cookie) throws IOException {
         FsInode parentFsInode = toFsInode(inode);
-        List<HimeraDirectoryEntry> list = DirectoryStreamHelper.listOf(parentFsInode);
 
-        // sort the list to preserve the cookie order
-        return list.stream()
-                .map(e -> new DirectoryEntry(e.getName(),
+        // ignore what ever is sent by client
+        verifier = directoryVerifier(inode);
+
+        List<DirectoryEntry> list = Lists.transform(
+                DirectoryStreamHelper.listOf(parentFsInode),
+                e -> new DirectoryEntry(e.getName(),
                     toInode(e.getInode()),
                     fromChimeraStat(e.getStat(), e.getInode().ino()),
-                    e.getStat().getIno()))
-                .sorted((a, b) -> Long.compare(a.getCookie(), b.getCookie()))
-                .collect(Collectors.toList());
+                    e.getStat().getIno()));
+
+        return new DirectoryStream(verifier, list);
+    }
+
+    @Override
+    public byte[] directoryVerifier(Inode inode) throws IOException {
+        FsInode parentFsInode = toFsInode(inode);
+        return verifier4.valueOf(parentFsInode.stat().getGeneration()).value;
     }
 
     @Override

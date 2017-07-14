@@ -83,6 +83,10 @@
 	<property name="maxEntries" value="${nfs.attribute-cache.size}" />
 	<property name="lifeTime" value="${nfs.attribute-cache.time}" />
 	<property name="timeUnit" value="${nfs.attribute-cache.unit}" />
+
+	<property name="readdirMaxEntries" value="${nfs.readdir-cache.size}" />
+	<property name="readdirLifeTime" value="${nfs.readdir-cache.time}" />
+	<property name="readdirLifeTimeUnit" value="${nfs.readdir-cache.unit}" />
     </bean>
 
     <bean id="vfs" class="org.dcache.nfs.vfs.VfsCache">
