@@ -244,7 +244,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         FsInode parentFsInode = toFsInode(inode);
 
         // ignore what ever is sent by client
-        verifier = directoryVerifier(inode);
+        byte[] currentCerifier = directoryVerifier(inode);
 
         List<DirectoryEntry> list = Lists.transform(
                 DirectoryStreamHelper.listOf(parentFsInode),
@@ -253,7 +253,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
                     fromChimeraStat(e.getStat(), e.getInode().ino()),
                     e.getStat().getIno()));
 
-        return new DirectoryStream(verifier, list);
+        return new DirectoryStream(currentCerifier, list);
     }
 
     @Override
