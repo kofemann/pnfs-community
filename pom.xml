@@ -80,6 +80,11 @@
       EXTERNAL DEPENDENCIES
     -->
 
+    <properties>
+        <version.hazelcast>3.9.2</version.hazelcast>
+        <version.curator>2.12.0</version.curator>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.dcache.chimera</groupId>
@@ -151,9 +156,10 @@
         <!--
             LOCAL JARS
         -->
+
         <dependency>
             <groupId>org.dcache</groupId>
-            <artifactId>nfs4j-core</artifactId>
+            <artifactId>nfs4j-spring</artifactId>
             <version>0.17.0-SNAPSHOT</version>
         </dependency>
 
@@ -162,6 +168,54 @@
             <artifactId>gmbal</artifactId>
             <version>4.0.0-b001</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20170516</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast</artifactId>
+            <version>${version.hazelcast}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-client</artifactId>
+            <version>${version.hazelcast}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-zookeeper</artifactId>
+            <version>3.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-x-discovery</artifactId>
+            <version>${version.curator}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.cache</groupId>
+            <artifactId>cache-api</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+
     </dependencies>
 
     <!--

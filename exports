@@ -1,2 +1,2 @@
-/exports *(rw)
+/exports *(rw,lt=nfsv4_1_files:flex_files)
 #/ localhost(rw,no_root_squash,acl)

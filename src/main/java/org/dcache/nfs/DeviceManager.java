@@ -31,18 +31,19 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.Enumeration;
+import org.dcache.nfs.status.NoEntException;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import org.dcache.nfs.status.NoEntException;
+import javax.cache.Cache;
+import javax.cache.Caching;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
@@ -58,6 +59,8 @@ import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.Inode;
+import org.dcache.nfs.zk.Paths;
+import org.dcache.nfs.zk.ZkDataServer;
 import org.dcache.utils.Bytes;
 
 /**
@@ -71,21 +74,30 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
 
-    /* hack for multiple pools */
-    private final Random _deviceIdGenerator = new Random();
-
     private final Map<deviceid4, InetSocketAddress[]> _deviceMap =
             new ConcurrentHashMap<>();
-
-    private InetSocketAddress[] _knownDataServers;
 
     // we need to return same layout stateid, as long as it's not returned
     private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
 
     /**
+     * Zookeeper client.
+     */
+    private CuratorFramework zkCurator;
+
+    /**
+     * Path cache to node with all on-line DSes.
+     */
+    private PathChildrenCache dsNodeCache;
+
+    /**
      * Layout type specific driver.
      */
     private final Map<layouttype4, LayoutDriver> _supportedDrivers;
+
+    // we use 'other' part of stateid as sequence number can change
+    private Cache<byte[], byte[]> mdsStateIdCache;
+
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
@@ -95,19 +107,34 @@ public class DeviceManager implements NFSv41DeviceManager {
         _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
     }
 
-    /**
-     * Set TCP port number used by data server.
-     * @param port tcp port number.
-     */
-    public void setDsPort(int port) throws SocketException {
-        _knownDataServers = getLocalAddresses(port);
+    public void setCuratorFramework(CuratorFramework curatorFramework) {
+        zkCurator = curatorFramework;
     }
 
-    private int nextDeviceID() {
-        /* 0 is reserved  for MDS */
-        return _deviceIdGenerator.nextInt(255) + 1;
-    }
+    public void init() throws Exception {
 
+        mdsStateIdCache = Caching
+                .getCachingProvider()
+                .getCacheManager()
+                .getCache("open-stateid", byte[].class, byte[].class);
+
+        dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
+        dsNodeCache.getListenable().addListener((c, e) -> {
+
+            switch(e.getType()) {
+                case CHILD_ADDED:
+                case CHILD_UPDATED:
+                    _log.info("Adding DS: {}", e.getData().getPath());
+                    addDS(e.getData().getPath());
+                    break;
+                case CHILD_REMOVED:
+                    _log.info("Removing DS: {}", e.getData().getPath());
+                    removeDS(e.getData().getPath());
+                    break;
+            }
+        });
+        dsNodeCache.start();
+    }
     /*
      * (non-Javadoc)
      *
@@ -123,24 +150,36 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
-        int id = nextDeviceID();
-        deviceid4 deviceId = deviceidOf(id);
+        deviceid4[] deviceId;
 
-        _log.debug("generating new device: {} ({}) for stateid {}",
-                deviceId, id, stateid);
+        if (!context.getFs().hasIOLayout(inode)) {
+            throw new LayoutUnavailableException("No dataservers available");
+        } else {
 
-        _deviceMap.put(deviceId, _knownDataServers);
+            int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
+            deviceId = _deviceMap.keySet().stream()
+                    .unordered()
+                    .limit(mirrors)
+                    .toArray(deviceid4[]::new);
 
+            if (deviceId.length == 0) {
+                throw new LayoutUnavailableException("No dataservers available");
+            }
+        }
 
         NFS4State openState = nfsState.getOpenState();
+        final stateid4 rawOpenState = openState.stateid();
 
-        NFS4State layoutStateId = _openToLayoutStateid.get(openState.stateid());
+        NFS4State layoutStateId = _openToLayoutStateid.get(rawOpenState);
         if(layoutStateId == null) {
             layoutStateId = client.createState(openState.getStateOwner(), openState);
             _openToLayoutStateid.put(stateid, layoutStateId);
+
+            mdsStateIdCache.put(rawOpenState.other, context.currentInode().toNfsHandle());
             nfsState.addDisposeListener(
                     state -> {
-                        _openToLayoutStateid.remove(openState.stateid());
+                        _openToLayoutStateid.remove(rawOpenState);
+                        mdsStateIdCache.remove(rawOpenState.other);
                     }
             );
         } else {
@@ -235,22 +274,17 @@ public class DeviceManager implements NFSv41DeviceManager {
         return new deviceid4(deviceidBytes);
     }
 
-    private InetSocketAddress[] getLocalAddresses(int port) throws SocketException {
-        List<InetSocketAddress> localaddresses = new ArrayList<>();
+    private void addDS(String node) throws Exception {
+        String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+        int deviceId = Integer.parseInt(id);
+        byte[] data = zkCurator.getData().forPath(node);
+        InetSocketAddress[] address = ZkDataServer.stringToString(data);
+        _deviceMap.put(deviceidOf(deviceId), address);
+    }
 
-        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-        while (ifaces.hasMoreElements()) {
-            NetworkInterface iface = ifaces.nextElement();
-            if (!iface.isUp() || iface.getName().startsWith("br-")) {
-                continue;
-            }
-
-            Enumeration<InetAddress> addrs = iface.getInetAddresses();
-            while (addrs.hasMoreElements()) {
-                InetAddress addr = addrs.nextElement();
-                localaddresses.add(new InetSocketAddress(addr, port));
-            }
-        }
-        return localaddresses.toArray(new InetSocketAddress[0]);
+    private void removeDS(String node) throws Exception {
+        String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+        int deviceId = Integer.parseInt(id);
+        _deviceMap.remove(deviceidOf(deviceId));
     }
 }
