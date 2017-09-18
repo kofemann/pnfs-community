@@ -78,7 +78,7 @@ public class DeviceManager implements NFSv41DeviceManager {
     /* hack for multiple pools */
     private final Random _deviceIdGenerator = new Random();
 
-    private final Map<deviceid4, device_addr4> _deviceMap =
+    private final Map<deviceid4, InetSocketAddress[]> _deviceMap =
             new ConcurrentHashMap<>();
 
     private InetSocketAddress[] _knownDataServers;
@@ -129,7 +129,6 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
-        device_addr4 deviceAddr;
         deviceid4 deviceId;
 
         if (layoutType != layoutDriver.getLayoutType()) {
@@ -149,17 +148,7 @@ public class DeviceManager implements NFSv41DeviceManager {
             _log.debug("generating new device: {} ({}) for stateid {}",
                     deviceId, id, stateid);
 
-            // limit addresses returned to client to the same 'type' as clients own address
-            InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
-            InetSocketAddress[] effectiveAddresses = Stream.of(_knownDataServers)
-                    .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
-                    .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
-                    .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
-                    .toArray(size -> new InetSocketAddress[size]);
-
-            deviceAddr = layoutDriver.getDeviceAddress(effectiveAddresses);
-
-            _deviceMap.put(deviceId, deviceAddr);
+            _deviceMap.put(deviceId, _knownDataServers);
         }
 
 
@@ -199,7 +188,7 @@ public class DeviceManager implements NFSv41DeviceManager {
     @Override
     public device_addr4 getDeviceInfo(CompoundContext context, deviceid4 deviceId, int layoutType) throws ChimeraNFSException {
 
-        _log.debug("lookup for device: {}, type:", deviceId, layoutType );
+        _log.debug("lookup for device: {}, type: {}", deviceId, layoutType );
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         /* in case of MDS access we return the same interface which client already connected to */
@@ -207,7 +196,18 @@ public class DeviceManager implements NFSv41DeviceManager {
             return layoutDriver.getDeviceAddress(context.getLocalSocketAddress());
         }
 
-        return  _deviceMap.get(deviceId);
+
+        InetSocketAddress[] addrs = _deviceMap.get(deviceId);
+
+        // limit addresses returned to client to the same 'type' as clients own address
+        InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
+        InetSocketAddress[] effectiveAddresses = Stream.of(addrs)
+                .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
+                .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
+                .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
+                .toArray(size -> new InetSocketAddress[size]);
+
+        return layoutDriver.getDeviceAddress(effectiveAddresses);
     }
 
     /*
