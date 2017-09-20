@@ -68,11 +68,6 @@ import org.dcache.utils.Bytes;
 
 public class DeviceManager implements NFSv41DeviceManager {
 
-    /*
-     * reserved device for IO through MDS (for pnfs dot files)
-     */
-    private static final deviceid4 MDS_ID = deviceidOf(0);
-
     private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
 
     /* hack for multiple pools */
@@ -135,21 +130,16 @@ public class DeviceManager implements NFSv41DeviceManager {
             throw new LayoutUnavailableException("layout not supported");
         }
 
-        if (!context.getFs().hasIOLayout(inode)) {
-            deviceId = MDS_ID;
-        } else {
-
-            if(_knownDataServers.length == 0) {
-                throw new LayoutUnavailableException("No dataservers available");
-            }
-            int id = nextDeviceID();
-            deviceId = deviceidOf(id);
-
-            _log.debug("generating new device: {} ({}) for stateid {}",
-                    deviceId, id, stateid);
-
-            _deviceMap.put(deviceId, _knownDataServers);
+        if (_knownDataServers.length == 0) {
+            throw new LayoutUnavailableException("No dataservers available");
         }
+        int id = nextDeviceID();
+        deviceId = deviceidOf(id);
+
+        _log.debug("generating new device: {} ({}) for stateid {}",
+                deviceId, id, stateid);
+
+        _deviceMap.put(deviceId, _knownDataServers);
 
 
         NFS4State openState = nfsState.getOpenState();
@@ -190,12 +180,6 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         _log.debug("lookup for device: {}, type: {}", deviceId, layoutType );
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
-
-        /* in case of MDS access we return the same interface which client already connected to */
-        if(deviceId.equals(MDS_ID)) {
-            return layoutDriver.getDeviceAddress(context.getLocalSocketAddress());
-        }
-
 
         InetSocketAddress[] addrs = _deviceMap.get(deviceId);
 
