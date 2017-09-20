@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.LayoutUnavailableException;
+import org.dcache.nfs.status.NoEntException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
 import org.dcache.nfs.v4.Layout;
@@ -182,6 +183,9 @@ public class DeviceManager implements NFSv41DeviceManager {
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         InetSocketAddress[] addrs = _deviceMap.get(deviceId);
+        if (addrs == null) {
+            throw new NoEntException("Unknown device id: " + deviceId);
+        }
 
         // limit addresses returned to client to the same 'type' as clients own address
         InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
