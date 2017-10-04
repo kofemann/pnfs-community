@@ -19,7 +19,6 @@
  */
 package org.dcache.nfs;
 
-import com.google.common.collect.ImmutableMap;
 import org.dcache.nfs.v4.xdr.layout4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.v4.xdr.nfs_fh4;
@@ -35,13 +34,14 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.NoEntException;
 import org.dcache.nfs.v4.CompoundContext;
@@ -85,17 +85,13 @@ public class DeviceManager implements NFSv41DeviceManager {
     /**
      * Layout type specific driver.
      */
-    private final Map<Integer, LayoutDriver> _supportedDrivers = ImmutableMap.of(
-            layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17")),
-            layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver()
-    );
+    private final Map<layouttype4, LayoutDriver> _supportedDrivers;
 
-    /**
-     * Array if layout types supported by the door. Put 'default' one first
-     */
-    private final int[] SUPPORTED_LAYOUT_TYPES = new int[]{
-        layouttype4.LAYOUT4_NFSV4_1_FILES
-    };
+    public DeviceManager() {
+        _supportedDrivers = new EnumMap<>(layouttype4.class);
+        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17")));
+        _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
+    }
 
     /**
      * Set TCP port number used by data server.
@@ -117,13 +113,16 @@ public class DeviceManager implements NFSv41DeviceManager {
      *              Inode inode, int layoutType, int ioMode, stateid4 stateid)
      */
     @Override
-    public Layout layoutGet(CompoundContext context, Inode inode, int layoutType, int ioMode, stateid4 stateid)
+    public Layout layoutGet(CompoundContext context, Inode inode, layouttype4 layoutType, int ioMode, stateid4 stateid)
             throws IOException {
 
         final NFS4Client client = context.getSession().getClient();
         final NFS4State nfsState = client.state(stateid);
 
-        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
+        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
+	if (layoutDriver == null) {
+	    throw new LayoutUnavailableException("Layout type (" + layoutType + ") not supported");
+	}
 
         deviceid4 deviceId;
 
@@ -174,10 +173,9 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceInfo(CompoundContext context, deviceid4 deviceId)
      */
     @Override
-    public device_addr4 getDeviceInfo(CompoundContext context, deviceid4 deviceId, int layoutType) throws ChimeraNFSException {
+    public device_addr4 getDeviceInfo(CompoundContext context, deviceid4 deviceId, layouttype4 layoutType) throws ChimeraNFSException {
 
         _log.debug("lookup for device: {}, type: {}", deviceId, layoutType );
-        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         InetSocketAddress[] addrs = _deviceMap.get(deviceId);
         if (addrs == null) {
@@ -192,6 +190,7 @@ public class DeviceManager implements NFSv41DeviceManager {
                 .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
                 .toArray(size -> new InetSocketAddress[size]);
 
+        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
         return layoutDriver.getDeviceAddress(effectiveAddresses);
     }
 
@@ -224,8 +223,8 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @see org.dcache.nfsv4.NFSv41DeviceManager#getLayoutTypes()
      */
     @Override
-    public int[] getLayoutTypes() {
-        return SUPPORTED_LAYOUT_TYPES;
+    public Set<layouttype4> getLayoutTypes() {
+        return _supportedDrivers.keySet();
     }
 
     private static deviceid4 deviceidOf(int id) {
@@ -233,18 +232,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         Bytes.putInt(deviceidBytes, 0, id);
 
         return new deviceid4(deviceidBytes);
-    }
-
-    private LayoutDriver getLayoutDriver(int layoutType) throws BadLayoutException, LayoutUnavailableException {
-        if (layoutType < 1 || layoutType > layouttype4.LAYOUT4_TYPE_MAX) {
-            throw new BadLayoutException("Invalid layout type requested(" + layoutType + ")");
-        }
-
-        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
-        if (layoutDriver == null) {
-            throw new LayoutUnavailableException("Layout type (" + layoutType + ") not supported");
-        }
-        return layoutDriver;
     }
 
     private InetSocketAddress[] getLocalAddresses(int port) throws SocketException {
