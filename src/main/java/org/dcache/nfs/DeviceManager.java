@@ -131,9 +131,6 @@ public class DeviceManager implements NFSv41DeviceManager {
             throw new LayoutUnavailableException("layout not supported");
         }
 
-        if (_knownDataServers.length == 0) {
-            throw new LayoutUnavailableException("No dataservers available");
-        }
         int id = nextDeviceID();
         deviceId = deviceidOf(id);
 
