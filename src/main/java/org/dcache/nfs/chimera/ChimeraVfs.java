@@ -251,7 +251,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
                 e -> new DirectoryEntry(e.getName(),
                     toInode(e.getInode()),
                     fromChimeraStat(e.getStat(), e.getInode().ino()),
-                    e.getStat().getIno()));
+                        direcotryCookieOf(e.getStat(), e.getName())));
 
         return new DirectoryStream(currentVerifier, list);
     }
@@ -667,4 +667,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         return args;
     }
 
+    private long direcotryCookieOf(org.dcache.chimera.posix.Stat stat, String name) {
+        return (stat.getIno() << 32 | name.hashCode()) & 0x7FffffffffffffffL;
+    }
 }
