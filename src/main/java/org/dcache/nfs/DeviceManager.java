@@ -42,8 +42,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.NoEntException;
+import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
 import org.dcache.nfs.v4.Layout;
@@ -119,19 +119,10 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4Client client = context.getSession().getClient();
         final NFS4State nfsState = client.state(stateid);
 
-        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
-	if (layoutDriver == null) {
-	    throw new LayoutUnavailableException("Layout type (" + layoutType + ") not supported");
-	}
-
-        deviceid4 deviceId;
-
-        if (layoutType != layoutDriver.getLayoutType()) {
-            throw new LayoutUnavailableException("layout not supported");
-        }
+        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
         int id = nextDeviceID();
-        deviceId = deviceidOf(id);
+        deviceid4 deviceId = deviceidOf(id);
 
         _log.debug("generating new device: {} ({}) for stateid {}",
                 deviceId, id, stateid);
@@ -166,7 +157,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         return  new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
     }
 
-
     /*
      * (non-Javadoc)
      *
@@ -175,7 +165,7 @@ public class DeviceManager implements NFSv41DeviceManager {
     @Override
     public device_addr4 getDeviceInfo(CompoundContext context, deviceid4 deviceId, layouttype4 layoutType) throws ChimeraNFSException {
 
-        _log.debug("lookup for device: {}, type: {}", deviceId, layoutType );
+        _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
 
         InetSocketAddress[] addrs = _deviceMap.get(deviceId);
         if (addrs == null) {
@@ -190,7 +180,7 @@ public class DeviceManager implements NFSv41DeviceManager {
                 .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
                 .toArray(size -> new InetSocketAddress[size]);
 
-        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
+        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
         return layoutDriver.getDeviceAddress(effectiveAddresses);
     }
 
@@ -211,10 +201,18 @@ public class DeviceManager implements NFSv41DeviceManager {
      */
     @Override
     public void layoutReturn(CompoundContext context, stateid4 stateid) throws ChimeraNFSException {
-        _log.debug( "release device for stateid {}", stateid );
+        _log.debug("release device for stateid {}", stateid);
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
         _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
+    }
+
+    private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
+        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
+        if (layoutDriver == null) {
+            throw new UnknownLayoutTypeException("Unsupported Layout type: " + layoutType);
+        }
+        return layoutDriver;
     }
 
     /*
