@@ -49,31 +49,26 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-shade-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
                         <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                         <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifest>
-                                    <mainClass>org.dcache.nfs.Main</mainClass>
-                                    <packageName>org.dcache.nfs</packageName>
-                                    <addExtensions />
-                                </manifest>
-                                <manifestEntries>
-                                    <mode>development</mode>
-                                    <Implementation-Build>${buildNumber}</Implementation-Build>
-                                    <url>${project.url}</url>
-                                    <Build-Time>${maven.build.timestamp}</Build-Time>
-                                </manifestEntries>
-                            </archive>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>org.dcache.nfs.Main</Main-Class>
+                                        <Implementation-Build>${buildNumber}</Implementation-Build>
+                                        <url>${project.url}</url>
+                                        <Build-Time>${maven.build.timestamp}</Build-Time>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
