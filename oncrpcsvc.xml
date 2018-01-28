@@ -186,7 +186,7 @@
     </bean>
 
     <bean id="oncrpcsvc" class="org.dcache.xdr.OncRpcSvc" depends-on="oncrpcsvc-ds"
-          destroy-method="stop">
+          init-method="start" destroy-method="stop">
         <description>Onc RPC service for MDS</description>
         <constructor-arg ref="oncrpcsvc-builder"/>
         <property name="programs">

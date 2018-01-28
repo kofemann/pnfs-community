@@ -29,8 +29,7 @@ public class Main {
             if (args.length > 1) {
                 context.getEnvironment().setActiveProfiles(Arrays.copyOfRange(args, 1, args.length));
             }
-            OncRpcSvc service = (OncRpcSvc) context.getBean("oncrpcsvc");
-            service.start();
+            context.getBean("oncrpcsvc");
 
             System.in.read();
         } catch (BeansException e) {
