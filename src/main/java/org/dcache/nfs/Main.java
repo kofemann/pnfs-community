@@ -31,7 +31,9 @@ public class Main {
             }
             context.getBean("oncrpcsvc");
 
-            System.in.read();
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            // shutdown
         } catch (BeansException e) {
             System.err.println("Spring: " + e.getMessage());
             System.exit(1);
