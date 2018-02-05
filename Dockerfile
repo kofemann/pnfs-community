@@ -1,0 +1,33 @@
+# Minimalistic Java image
+FROM alpine:3.7
+MAINTAINER dCache "https://www.dcache.org"
+
+# Add JRE
+RUN apk --update add openjdk8-jre
+
+# Add dCache
+RUN mkdir -p /opt/pnfs
+RUN mkdir -p /opt/pnfs/db
+COPY target/chimera-nfs-0.0.1-SNAPSHOT.jar /opt/pnfs/pnfs.jar
+
+# Run dCache as user 'dcache'
+RUN addgroup pnfs && adduser -S -G pnfs pnfs
+
+# add external files into container at the build time
+COPY run.sh /run.sh
+
+# where we store the data
+RUN mkdir /data
+
+# adjust permissions
+RUN chown -R pnfs:pnfs /data
+RUN chown -R pnfs:pnfs /opt/pnfs
+
+# expose TCP ports for network services
+EXPOSE 2049 32049
+
+# run as user pnfs
+USER pnfs
+
+# default domain
+CMD ["/run.sh"]

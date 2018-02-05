@@ -1,0 +1,69 @@
+version: '2'
+services:
+
+  docker-discovery:
+    image: npalm/docker-discovery-agent
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  zk:
+    image: zookeeper
+    restart: always
+
+  hz:
+    image: hazelcast/hazelcast
+    environment:
+    - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml -Dhazelcast.mancenter.url=http://mancenter:8080/mancenter
+    volumes:
+    - "./hazelcast.xml:/hazelcast.xml"
+    links:
+    - hz-mgr:mancenter
+
+  hz-mgr:
+      image: hazelcast/management-center:latest
+      ports:
+      - "8080:8080"
+      environment:
+      - JAVA_OPTS=-Dhazelcast.mc.rest.enabled=true
+
+  mds:
+    build:
+        context: .
+    depends_on:
+    - hz
+    - zk
+    environment:
+    - JAVA_OPT=-Dhazelcast.diagnostics.enabled=true -Dhazelcast.client.statistics.enabled=true
+    links:
+    - zk:zk-host
+    - hz:hz-host
+    ports:
+    - "2049:2049"
+    volumes:
+    - ./exports:/opt/pnfs/exports
+    - ./oncrpcsvc.xml:/opt/pnfs/svc.xml
+    - ./nfs.properties:/opt/pnfs/nfs.properties
+    - ./chimera.properties:/opt/pnfs/chimera.properties
+
+  ds:
+    build:
+      context: .
+      dockerfile: Dockerfile.ds
+    depends_on:
+    - hz
+    - zk
+    - mds
+    environment:
+    - LOCALADDRESS=192.168.178.40
+    - JAVA_OPT=-Dhazelcast.diagnostics.enabled=true -Dhazelcast.client.statistics.enabled=true
+    links:
+    - zk:zk-host
+    - hz:hz-host
+    - docker-discovery:dockerhost
+    ports:
+    - "2052"
+    volumes:
+    - ./exports:/opt/pnfs/exports
+    - ./ds.xml:/opt/pnfs/svc.xml
+    - ./ds.properties:/opt/pnfs/ds.properties
+    - ./chimera.properties:/opt/pnfs/chimera.properties
