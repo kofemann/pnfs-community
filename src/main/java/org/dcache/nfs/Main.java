@@ -1,5 +1,6 @@
 package org.dcache.nfs;
 
+import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -35,7 +36,8 @@ public class Main {
         } catch (InterruptedException e) {
             // shutdown
         } catch (BeansException e) {
-            System.err.println("Spring: " + e.getMessage());
+            Throwable t = e.getMostSpecificCause();
+            System.err.println("Faled to initialize beans: " + t.getMessage());
             System.exit(1);
         }
 
