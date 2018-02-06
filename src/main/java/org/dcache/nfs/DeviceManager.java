@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2018 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -200,7 +200,7 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn()
      */
     @Override
-    public void layoutReturn(CompoundContext context, stateid4 stateid) throws ChimeraNFSException {
+    public void layoutReturn(CompoundContext context, stateid4 stateid, layouttype4 layoutType, byte[] body) throws ChimeraNFSException {
         _log.debug("release device for stateid {}", stateid);
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
