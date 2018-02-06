@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-kafka="http://www.springframework.org/schema/integration/kafka"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-           http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+           http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+           http://www.springframework.org/schema/integration/kafka
+ http://www.springframework.org/schema/integration/kafka/spring-integration-kafka.xsd
+ http://www.springframework.org/schema/integration
+ http://www.springframework.org/schema/integration/spring-integration.xsd"
+           >
 
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
@@ -45,6 +52,8 @@
     <bean id="device-manager" class="org.dcache.nfs.DeviceManager" init-method="init">
         <description>Device manager</description>
         <property name="curatorFramework" ref="zk-curator" />
+        <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
+        <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
     </bean>
 
     <!--
@@ -165,5 +174,38 @@
     </bean>
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
+
+
+    <bean id="iostat-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
+         <constructor-arg>
+             <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+                 <constructor-arg>
+                     <map>
+                         <entry key="bootstrap.servers" value="kafka-host:9092"/>
+                         <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
+                         <entry key="value.serializer" value="org.dcache.nfs.IoStatSerializer" />
+                     </map>
+                 </constructor-arg>
+             </bean>
+         </constructor-arg>
+         <constructor-arg name="autoFlush" value="false" />
+         <property name="defaultTopic" value="iostat"/>
+     </bean>
+
+    <bean id="ioerr-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
+         <constructor-arg>
+             <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+                 <constructor-arg>
+                     <map>
+                         <entry key="bootstrap.servers" value="kafka-host:9092"/>
+                         <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
+                         <entry key="value.serializer" value="org.dcache.nfs.IoErrorSerializer" />
+                     </map>
+                 </constructor-arg>
+             </bean>
+         </constructor-arg>
+         <constructor-arg name="autoFlush" value="false" />
+         <property name="defaultTopic" value="ioerr"/>
+     </bean>
 
 </beans>

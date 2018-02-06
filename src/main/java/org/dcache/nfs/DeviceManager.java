@@ -27,6 +27,7 @@ import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.device_addr4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -54,6 +56,9 @@ import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
+import org.dcache.nfs.v4.ff.ff_ioerr4;
+import org.dcache.nfs.v4.ff.ff_iostats4;
+import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
@@ -98,13 +103,11 @@ public class DeviceManager implements NFSv41DeviceManager {
     // we use 'other' part of stateid as sequence number can change
     private Cache<byte[], byte[]> mdsStateIdCache;
 
+    private KafkaTemplate iostatKafkaTemplate;
+    private KafkaTemplate ioerrKafkaTemplate;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
-        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
-                new utf8str_mixed("17"),new utf8str_mixed("17"), x -> {})
-        );
-        _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
     }
 
     public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -112,6 +115,22 @@ public class DeviceManager implements NFSv41DeviceManager {
     }
 
     public void init() throws Exception {
+        final Consumer<ff_layoutreturn4> flexfilesStat = lr -> {
+
+            for (ff_iostats4 iostat : lr.fflr_iostats_report) {
+                iostatKafkaTemplate.sendDefault(iostat);
+            }
+
+            for (ff_ioerr4 ioerr : lr.fflr_ioerr_report) {
+                ioerrKafkaTemplate.sendDefault(ioerr);
+            }
+        };
+
+        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
+                new utf8str_mixed("17"), new utf8str_mixed("17"), flexfilesStat)
+        );
+
+        _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
 
         mdsStateIdCache = Caching
                 .getCachingProvider()
@@ -286,5 +305,13 @@ public class DeviceManager implements NFSv41DeviceManager {
         String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
         int deviceId = Integer.parseInt(id);
         _deviceMap.remove(deviceidOf(deviceId));
+    }
+
+    public void setIoStatKafkaTemplate(KafkaTemplate template) {
+        iostatKafkaTemplate = template;
+    }
+
+    public void setIoErrKafkaTemplate(KafkaTemplate template) {
+        ioerrKafkaTemplate = template;
     }
 }
