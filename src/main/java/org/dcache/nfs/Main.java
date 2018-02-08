@@ -1,6 +1,5 @@
 package org.dcache.nfs;
 
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -8,7 +7,6 @@ import java.util.logging.LogManager;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 
-import org.dcache.xdr.OncRpcSvc;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
