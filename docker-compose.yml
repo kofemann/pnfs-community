@@ -41,8 +41,7 @@ services:
       - JAVA_OPTS=-Dhazelcast.mc.rest.enabled=true
 
   mds:
-    build:
-        context: .
+    image: dcache/pnfs-community-ds
     depends_on:
     - hz
     - zk
@@ -61,9 +60,7 @@ services:
     - ./chimera.properties:/opt/pnfs/chimera.properties
 
   ds:
-    build:
-      context: .
-      dockerfile: Dockerfile.ds
+    image: dcache/pnfs-community-ds
     depends_on:
     - hz
     - zk
