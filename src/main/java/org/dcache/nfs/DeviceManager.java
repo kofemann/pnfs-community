@@ -89,7 +89,9 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
-        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17")));
+        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
+                new utf8str_mixed("17"),new utf8str_mixed("17"), x -> {})
+        );
         _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
     }
 
@@ -205,6 +207,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
         _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
+        getLayoutDriver(layoutType).acceptLayoutReturnData(body);
     }
 
     private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
