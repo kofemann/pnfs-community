@@ -1,7 +1,7 @@
-pNFS community
+NFSv4.1/pNFS community
 ==============
 
-A simple pnfs community for testing.
+A simple NFSv4.1/pNFS community for testing and demonstration.
 
 
 Building:
