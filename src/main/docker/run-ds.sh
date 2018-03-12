@@ -8,5 +8,6 @@ PORT=`/agent-client.py ${CONTAINER_ID}`
 echo "Staring DS on ${LOCALADDRESS}:${PORT}"
 
 cd /opt/pnfs
-/usr/bin/java ${JAVA_OPT} -DPNFS_DS_ADDRESS="${LOCALADDRESS}:${PORT}" -server \
+/usr/bin/java -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap \
+	${JAVA_OPT} -DPNFS_DS_ADDRESS="${LOCALADDRESS}:${PORT}" -server \
 	-jar /opt/pnfs/pnfs.jar svc.xml
