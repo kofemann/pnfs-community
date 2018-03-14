@@ -68,7 +68,5 @@ services:
     ports:
     - "2052"
     volumes:
-    - ./exports:/opt/pnfs/exports
     - ./ds.xml:/opt/pnfs/svc.xml
     - ./ds.properties:/opt/pnfs/ds.properties
-    - ./chimera.properties:/opt/pnfs/chimera.properties
