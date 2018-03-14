@@ -27,18 +27,11 @@ services:
   hz:
     image: hazelcast/hazelcast
     environment:
-    - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml -Dhazelcast.mancenter.url=http://mancenter:8080/mancenter
+    - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml
     volumes:
     - "./hazelcast.xml:/hazelcast.xml"
     links:
     - hz-mgr:mancenter
-
-  hz-mgr:
-      image: hazelcast/management-center:latest
-      ports:
-      - "8080:8080"
-      environment:
-      - JAVA_OPTS=-Dhazelcast.mc.rest.enabled=true
 
   mds:
     image: dcache/pnfs-community-ds
@@ -46,7 +39,7 @@ services:
     - hz
     - zk
     environment:
-    - JAVA_OPT=-Dhazelcast.diagnostics.enabled=true -Dhazelcast.client.statistics.enabled=true
+    - JAVA_OPT=""
     links:
     - zk:zk-host
     - hz:hz-host
@@ -67,7 +60,7 @@ services:
     - mds
     environment:
     - LOCALADDRESS=192.168.178.40
-    - JAVA_OPT=-Dhazelcast.diagnostics.enabled=true -Dhazelcast.client.statistics.enabled=true
+    - JAVA_OPT=""
     links:
     - zk:zk-host
     - hz:hz-host

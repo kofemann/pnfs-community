@@ -4,12 +4,6 @@
         xmlns="http://www.hazelcast.com/schema/config"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <!-- properties will be passed via -D... JAVA_OPTS -->
-    <!-- see hazelcast.yml -->
-    <management-center enabled="true" update-interval="3">
-        ${hazelcast.mancenter.url}
-    </management-center>
-
     <cache name="open-stateid">
          <key-type class-name="[B"/>
          <value-type class-name="[B"/>
