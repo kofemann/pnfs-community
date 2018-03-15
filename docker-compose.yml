@@ -30,8 +30,6 @@ services:
     - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml
     volumes:
     - "./hazelcast.xml:/hazelcast.xml"
-    links:
-    - hz-mgr:mancenter
 
   mds:
     image: dcache/pnfs-community-ds
