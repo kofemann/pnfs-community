@@ -32,7 +32,7 @@ services:
     - "./hazelcast.xml:/hazelcast.xml"
 
   mds:
-    image: dcache/pnfs-community-ds
+    image: dcache/pnfs-community-mds
     depends_on:
     - hz
     - zk
