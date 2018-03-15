@@ -37,7 +37,7 @@ services:
     - hz
     - zk
     environment:
-    - JAVA_OPT=""
+    - JAVA_OPT=
     links:
     - zk:zk-host
     - hz:hz-host
@@ -59,7 +59,7 @@ services:
     - docker-discovery
     environment:
     - LOCALADDRESS=192.168.178.40
-    - JAVA_OPT=""
+    - JAVA_OPT=
     links:
     - zk:zk-host
     - hz:hz-host
