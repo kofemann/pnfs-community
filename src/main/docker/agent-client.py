@@ -1,12 +1,8 @@
 #!/usr/bin/env python
 
 import urllib2
-import urllib
 import sys
 import json
-import os
-
-WS_PATH="/v1/certificate"
 
 def main():
 
