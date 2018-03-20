@@ -103,8 +103,8 @@ public class DeviceManager implements NFSv41DeviceManager {
     // we use 'other' part of stateid as sequence number can change
     private Cache<byte[], byte[]> mdsStateIdCache;
 
-    private KafkaTemplate iostatKafkaTemplate;
-    private KafkaTemplate ioerrKafkaTemplate;
+    private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
+    private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
@@ -307,11 +307,11 @@ public class DeviceManager implements NFSv41DeviceManager {
         _deviceMap.remove(deviceidOf(deviceId));
     }
 
-    public void setIoStatKafkaTemplate(KafkaTemplate template) {
+    public void setIoStatKafkaTemplate(KafkaTemplate<Object, ff_iostats4> template) {
         iostatKafkaTemplate = template;
     }
 
-    public void setIoErrKafkaTemplate(KafkaTemplate template) {
+    public void setIoErrKafkaTemplate(KafkaTemplate<Object, ff_ioerr4> template) {
         ioerrKafkaTemplate = template;
     }
 }
