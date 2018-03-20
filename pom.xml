@@ -9,7 +9,7 @@
     <groupId>org.dcache</groupId>
     <artifactId>chimera-nfs</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Chimera backend for NFS4j</name>
+    <name>NFSv4.1/pNFS community for testing and technology preview</name>
     <packaging>jar</packaging>
 
     <url>http://www.dCache.ORG</url>
