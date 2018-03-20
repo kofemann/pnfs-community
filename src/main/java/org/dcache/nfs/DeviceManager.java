@@ -169,22 +169,11 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
-        deviceid4[] deviceId;
-
         if (!context.getFs().hasIOLayout(inode)) {
             throw new LayoutUnavailableException("No dataservers available");
-        } else {
-
-            int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
-            deviceId = _deviceMap.keySet().stream()
-                    .unordered()
-                    .limit(mirrors)
-                    .toArray(deviceid4[]::new);
-
-            if (deviceId.length == 0) {
-                throw new LayoutUnavailableException("No dataservers available");
-            }
         }
+
+        deviceid4[] deviceId = getOrBindDeviceId(inode, ioMode, layoutType);
 
         NFS4State openState = nfsState.getOpenState();
         final stateid4 rawOpenState = openState.stateid();
@@ -314,4 +303,29 @@ public class DeviceManager implements NFSv41DeviceManager {
     public void setIoErrKafkaTemplate(KafkaTemplate<Object, ff_ioerr4> template) {
         ioerrKafkaTemplate = template;
     }
+
+
+    /**
+     * Returns an array of device ids associated with the file. If
+     * binding between {@code inode} and devices doesn't exists, then such binding
+     * is established.
+     * @param inode inode of the file
+     * @param iomode layout's IO mode
+     * @param layoutType layout type for which device id is required
+     * @return array of device ids.
+     */
+    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws LayoutUnavailableException {
+        int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
+        deviceid4[] deviceId = _deviceMap.keySet().stream()
+                .unordered()
+                .limit(mirrors)
+                .toArray(deviceid4[]::new);
+
+        if (deviceId.length == 0) {
+            throw new LayoutUnavailableException("No dataservers available");
+        }
+
+        return deviceId;
+    }
+
 }
