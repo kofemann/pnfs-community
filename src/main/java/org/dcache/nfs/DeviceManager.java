@@ -45,6 +45,7 @@ import javax.cache.Cache;
 import javax.cache.Caching;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
@@ -314,7 +315,7 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @param layoutType layout type for which device id is required
      * @return array of device ids.
      */
-    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws LayoutUnavailableException {
+    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException {
         int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
         deviceid4[] deviceId = _deviceMap.keySet().stream()
                 .unordered()
@@ -322,7 +323,7 @@ public class DeviceManager implements NFSv41DeviceManager {
                 .toArray(deviceid4[]::new);
 
         if (deviceId.length == 0) {
-            throw new LayoutUnavailableException("No dataservers available");
+            throw new DelayException("No dataservers available");
         }
 
         return deviceId;
