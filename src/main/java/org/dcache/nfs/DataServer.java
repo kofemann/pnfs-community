@@ -21,8 +21,10 @@ import javax.security.auth.Subject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
+import org.dcache.nfs.bep.SetSize;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadStateidException;
+import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
 import org.dcache.nfs.v4.CompoundContext;
@@ -49,9 +51,11 @@ import org.dcache.nfs.v4.xdr.WRITE4resok;
 import org.dcache.nfs.v4.xdr.count4;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
+import org.dcache.nfs.v4.xdr.nfs_fh4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
 import org.dcache.nfs.v4.xdr.nfs_resop4;
 import org.dcache.nfs.v4.xdr.nfsace4;
+import org.dcache.nfs.v4.xdr.stable_how4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.vfs.AclCheckable;
 import org.dcache.nfs.vfs.DirectoryStream;
@@ -62,10 +66,15 @@ import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
+import org.dcache.xdr.IpProtocolType;
+import org.dcache.xdr.OncRpcClient;
 import org.dcache.xdr.OncRpcException;
 import org.dcache.xdr.OncRpcProgram;
 import org.dcache.xdr.OncRpcSvc;
 import org.dcache.xdr.OncRpcSvcBuilder;
+import org.dcache.xdr.RpcAuthTypeNone;
+import org.dcache.xdr.RpcCall;
+import org.dcache.xdr.XdrInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +95,8 @@ public class DataServer {
 
     // we use 'other' part of stateid as sequence number can change
     private Cache<byte[], byte[]> mdsStateIdCache;
+
+    private RpcCall bepClient;
 
     /**
      * Set TCP port number used by data server.
@@ -339,7 +350,6 @@ public class DataServer {
 
     public class DSOperationWRITE extends AbstractNFSv4Operation {
 
-
         public DSOperationWRITE(nfs_argop4 args) {
             super(args, nfs_opnum4.OP_WRITE);
         }
@@ -376,11 +386,10 @@ public class DataServer {
             res.status = nfsstat.NFS_OK;
             res.resok4 = new WRITE4resok();
             res.resok4.count = new count4(bytesWritten);
-            res.resok4.committed = _args.opwrite.stable;
+            res.resok4.committed = stable_how4.UNSTABLE4;
             res.resok4.writeverf = context.getRebootVerifier();
         }
     }
-
 
     public class DSOperationREAD extends AbstractNFSv4Operation {
 
@@ -434,14 +443,32 @@ public class DataServer {
         public void process(CompoundContext context, nfs_resop4 result) throws ChimeraNFSException, IOException, OncRpcException {
 
             final COMMIT4res res = result.opcommit;
-            res.status = nfsstat.NFS_OK;
 
             Inode inode = context.currentInode();
             FileChannel out = fsc.get(inode);
+            SetSize ss = new SetSize(new nfs_fh4(inode.toNfsHandle()), out.size());
+            XdrInt ssRes = new XdrInt();
+            RpcCall r = getBepClient();
+            r.call(1, ss, ssRes);
 
-            out.truncate(_args.opcommit.offset.value + _args.opcommit.count.value);
-            res.resok4 = new COMMIT4resok();
-            res.resok4.writeverf = context.getRebootVerifier();
+            res.status = ssRes.intValue();
+            if (res.status == nfsstat.NFS_OK) {
+                res.resok4 = new COMMIT4resok();
+                res.resok4.writeverf = context.getRebootVerifier();
+            }
         }
+    }
+
+    private RpcCall getBepClient() throws DelayException {
+
+        if (bepClient == null || !bepClient.getTransport().isOpen()) {
+            try {
+                bepClient = new RpcCall(170001, 1, new RpcAuthTypeNone(),
+                        new OncRpcClient(InetAddress.getByName("mds"), IpProtocolType.TCP, 2049).connect());
+            } catch (IOException e) {
+                throw new DelayException("fales to get BEP client", e);
+            }
+        }
+        return bepClient;
     }
 }

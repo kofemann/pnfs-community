@@ -19,6 +19,7 @@
  */
 package org.dcache.nfs;
 
+import com.google.common.io.BaseEncoding;
 import org.dcache.nfs.v4.xdr.layout4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.v4.xdr.nfs_fh4;
@@ -32,6 +33,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import org.dcache.nfs.status.NoEntException;
@@ -45,8 +47,11 @@ import javax.cache.Cache;
 import javax.cache.Caching;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.dcache.nfs.chimera.ChimeraVfs;
 import org.dcache.nfs.status.DelayException;
+import org.dcache.nfs.status.LayoutTryLaterException;
 import org.dcache.nfs.status.LayoutUnavailableException;
+import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
@@ -60,6 +65,7 @@ import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
 import org.dcache.nfs.v4.ff.ff_ioerr4;
 import org.dcache.nfs.v4.ff.ff_iostats4;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
+import org.dcache.nfs.v4.xdr.layoutiomode4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
@@ -107,8 +113,14 @@ public class DeviceManager implements NFSv41DeviceManager {
     private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
     private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
 
+    private ChimeraVfs fs;
+
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
+    }
+
+    public void setChimeraVfs(ChimeraVfs fs) {
+        this.fs = fs;
     }
 
     public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -169,10 +181,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4State nfsState = client.state(stateid);
 
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
-
-        if (!context.getFs().hasIOLayout(inode)) {
-            throw new LayoutUnavailableException("No dataservers available");
-        }
 
         deviceid4[] deviceId = getOrBindDeviceId(inode, ioMode, layoutType);
 
@@ -315,15 +323,49 @@ public class DeviceManager implements NFSv41DeviceManager {
      * @param layoutType layout type for which device id is required
      * @return array of device ids.
      */
-    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException {
-        int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
-        deviceid4[] deviceId = _deviceMap.keySet().stream()
-                .unordered()
-                .limit(mirrors)
-                .toArray(deviceid4[]::new);
+    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException, IOException {
 
-        if (deviceId.length == 0) {
-            throw new DelayException("No dataservers available");
+        deviceid4[] deviceId;
+        // independent from read or write, check existing location first
+        String combinedLocation = fs.getInodeLayout(inode);
+        if (combinedLocation != null) {
+
+            byte[] raw = BaseEncoding.base16().lowerCase().decode(combinedLocation);
+            if ((raw.length == 0) || (raw.length % Short.BYTES != 0)) {
+                throw new ServerFaultException("invalid location size");
+            }
+
+            ByteBuffer b = ByteBuffer.wrap(raw);
+
+            deviceId = new deviceid4[raw.length / Short.BYTES];
+            for (int i = 0; i < deviceId.length; i++) {
+                deviceId[i] = deviceidOf(b.getShort(i));
+            }
+
+        } else {
+
+            // on read, we always expect a location
+            if (iomode == layoutiomode4.LAYOUTIOMODE4_READ) {
+                throw new LayoutTryLaterException("No location");
+            }
+
+            int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
+
+            ByteBuffer b = ByteBuffer.allocate(Short.BYTES * mirrors);
+            deviceId = _deviceMap.keySet().stream()
+                    .unordered()
+                    .limit(mirrors)
+                    .peek(d -> b.putShort((short) Bytes.getInt(d.value, 0)))
+                    .toArray(deviceid4[]::new);
+
+            if (deviceId.length == 0) {
+                throw new LayoutTryLaterException("No dataservers available");
+            }
+
+            if (!fs.setInodeLayout(inode, BaseEncoding.base16().lowerCase().encode(b.array()))) {
+                // we fail, as other location is set. try again
+                return getOrBindDeviceId(inode, iomode, layoutType);
+            }
         }
 
         return deviceId;

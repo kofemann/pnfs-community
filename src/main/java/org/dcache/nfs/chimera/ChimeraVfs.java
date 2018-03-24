@@ -61,11 +61,18 @@ import org.dcache.chimera.IsDirChimeraException;
 import org.dcache.chimera.JdbcFs;
 import org.dcache.chimera.NotDirChimeraException;
 import org.dcache.chimera.StorageGenericLocation;
+import org.dcache.chimera.StorageLocatable;
+import org.dcache.nfs.ChimeraNFSException;
+import org.dcache.nfs.bep.AbstractBackEndProtocolSvc;
+import org.dcache.nfs.bep.SetSize;
+import org.dcache.nfs.bep.SetSizeMessageOuterClass.SetSizeMessage;
+import org.dcache.nfs.nfsstat;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadOwnerException;
 import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.InvalException;
 import org.dcache.nfs.status.IsDirException;
+import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.NoEntException;
 import org.dcache.nfs.status.NotDirException;
@@ -87,6 +94,7 @@ import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
+import org.dcache.xdr.XdrInt;
 
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.NO_STAT;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
@@ -95,7 +103,7 @@ import static org.dcache.nfs.v4.xdr.nfs4_prot.*;
 /**
  * Interface to a virtual file system.
  */
-public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
+public class ChimeraVfs extends AbstractBackEndProtocolSvc  implements VirtualFileSystem, AclCheckable {
 
     /**
      * minimal binary handle size which can be processed.
@@ -674,5 +682,36 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         // to avoid collisions when on hard links, generate cookie based on inumber and name hash
         // reset upper bit to have only positive numbers
         return (stat.getIno() << 32 | name.hashCode()) & 0x7FffffffffffffffL;
+    }
+
+
+    public String getInodeLayout(Inode inode) throws ChimeraNFSException, IOException {
+        FsInode fsInode = toFsInode(inode);
+
+        if (fsInode.type() != FsInodeType.INODE || fsInode.getLevel() != 0) {
+            throw new LayoutUnavailableException();
+        }
+
+        return _fs.getInodeLocations(fsInode, StorageGenericLocation.DISK).stream()
+                .map(StorageLocatable::location)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public boolean setInodeLayout(Inode inode, String layout) throws IOException {
+        return _fs.setInodeLocation(toFsInode(inode), 1, layout);
+    }
+
+    @Override
+    public XdrInt setInodeSize(SetSize arg) {
+        try {
+            FsInode fsInode = toFsInode(new Inode(arg.getFh().value));
+            org.dcache.chimera.posix.Stat stat = new org.dcache.chimera.posix.Stat();
+            stat.setSize(arg.getSize());
+            _fs.setInodeAttributes(fsInode, 0, stat);
+            return new XdrInt(nfsstat.NFS_OK);
+        } catch (IOException e) {
+            return new XdrInt(nfsstat.NFSERR_IO);
+        }
     }
 }

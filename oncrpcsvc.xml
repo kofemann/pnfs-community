@@ -54,6 +54,7 @@
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
         <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
+        <property name="chimeraVfs" ref="vfs-intern"/>
     </bean>
 
     <!--
@@ -145,6 +146,13 @@
         <constructor-arg index="1" value="4" />
     </bean>
 
+    <!-- NFSv4 programm -->
+    <bean id="bep-programm" class="org.dcache.xdr.OncRpcProgram">
+        <description>Back-end-protocol programm number</description>
+        <constructor-arg index="0" value="170001" />
+        <constructor-arg index="1" value="1" />
+    </bean>
+
     <!--
         ONC RPC service
     -->
@@ -164,6 +172,7 @@
         <property name="programs">
             <map>
                 <entry key-ref="nfsv4-programm" value-ref="mds"/>
+                <entry key-ref="bep-programm" value-ref="vfs-intern"/>
             </map>
         </property>
     </bean>
