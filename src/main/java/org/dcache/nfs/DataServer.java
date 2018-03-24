@@ -27,7 +27,6 @@ import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.NFSServerV41;
-import org.dcache.nfs.v4.NFSServerV41Factory;
 import org.dcache.nfs.v4.NFSv4OperationFactory;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.nfs.v4.OperationBIND_CONN_TO_SESSION;
@@ -379,7 +378,6 @@ public class DataServer {
             res.resok4.count = new count4(bytesWritten);
             res.resok4.committed = _args.opwrite.stable;
             res.resok4.writeverf = context.getRebootVerifier();
-            res.resok4.writeverf.value = new byte[nfs4_prot.NFS4_VERIFIER_SIZE];
         }
     }
 
@@ -444,7 +442,6 @@ public class DataServer {
             out.truncate(_args.opcommit.offset.value + _args.opcommit.count.value);
             res.resok4 = new COMMIT4resok();
             res.resok4.writeverf = context.getRebootVerifier();
-            res.resok4.writeverf.value = new byte[nfs4_prot.NFS4_VERIFIER_SIZE];
         }
     }
 }
