@@ -1,0 +1,3 @@
+# local IP address exposed by pNFS community
+LOCAL_ADDRESS=192.168.178.40
+

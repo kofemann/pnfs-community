@@ -1,3 +1,7 @@
+#
+# requires .env file with
+# - LOCAL_ADDRESS : the ip address of the docker host
+
 version: '2'
 services:
 
@@ -16,7 +20,7 @@ services:
     ports:
     - "9092:9092"
     environment:
-    - KAFKA_ADVERTISED_HOST_NAME=192.168.178.40
+    - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
     - KAFKA_CREATE_TOPICS=iostat:1:1,ioerr:1:1
     - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/kafka
     links:
@@ -58,7 +62,7 @@ services:
     - mds
     - docker-discovery
     environment:
-    - LOCALADDRESS=192.168.178.40
+    - LOCALADDRESS=${LOCAL_ADDRESS}
     - JAVA_OPT=
     links:
     - zk:zk-host
