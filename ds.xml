@@ -30,7 +30,7 @@
         <constructor-arg value="${base}" />
     </bean>
 
-    <bean id="ds-data-pool" class="org.dcache.nfs.vfs.FsCache" init-method="init">
+    <bean id="ds-data-pool" class="org.dcache.nfs.IoChannelCache" init-method="init">
         <property name="base" ref="ds-data-dir" />
         <property name="maxSize" value="1024" />
         <property name="lastAccess" value="30" />
@@ -43,7 +43,7 @@
         <description>Data Server</description>
         <property name="port" value="${port}" />
         <property name="curatorFramework" ref="zk-curator" />
-        <property name="fsCache" ref="ds-data-pool" />
+        <property name="ioChannelCache" ref="ds-data-pool" />
         <property name="idFile" value="${idfile}" />
     </bean>
 

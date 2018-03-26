@@ -4,6 +4,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.net.HostAndPort;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -59,7 +60,6 @@ import org.dcache.nfs.v4.xdr.stable_how4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.vfs.AclCheckable;
 import org.dcache.nfs.vfs.DirectoryStream;
-import org.dcache.nfs.vfs.FsCache;
 import org.dcache.nfs.vfs.FsStat;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
@@ -90,7 +90,7 @@ public class DataServer {
 
     private OncRpcSvc svc;
     private NFSServerV41 nfs;
-    private FsCache fsc;
+    private IoChannelCache fsc;
     private String idFile;
 
     // we use 'other' part of stateid as sequence number can change
@@ -140,7 +140,7 @@ public class DataServer {
                 .getCache("open-stateid", byte[].class, byte[].class);
     }
 
-    public void setFsCache(FsCache fsCache) {
+    public void setIoChannelCache(IoChannelCache fsCache) {
         this.fsc = fsCache;
     }
 
@@ -374,7 +374,7 @@ public class DataServer {
                 throw new BadHandleException();
             }
 
-            FileChannel out = fsc.get(inode);
+            FileChannel out = fsc.get(inode).getChannel();
 
             _args.opwrite.data.rewind();
             int bytesWritten = out.write(_args.opwrite.data, offset);
@@ -419,7 +419,7 @@ public class DataServer {
             int count = _args.opread.count.value;
 
             ByteBuffer bb = ByteBuffer.allocateDirect(count);
-            FileChannel in = fsc.get(inode);
+            FileChannel in = fsc.get(inode).getChannel();
 
             int bytesReaded = in.read(bb, offset);
             if (bytesReaded < 0) {
@@ -445,8 +445,8 @@ public class DataServer {
             final COMMIT4res res = result.opcommit;
 
             Inode inode = context.currentInode();
-            FileChannel out = fsc.get(inode);
-            SetSize ss = new SetSize(new nfs_fh4(inode.toNfsHandle()), out.size());
+            RandomAccessFile out = fsc.get(inode);
+            SetSize ss = new SetSize(new nfs_fh4(inode.toNfsHandle()), out.length());
             XdrInt ssRes = new XdrInt();
             RpcCall r = getBepClient();
             r.call(1, ss, ssRes);
