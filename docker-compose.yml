@@ -6,7 +6,7 @@ version: '2'
 services:
 
   docker-discovery:
-    image: npalm/docker-discovery-agent
+    image: dcache/docker-discovery-agent
     volumes:
     - /var/run/docker.sock:/var/run/docker.sock:ro
 
