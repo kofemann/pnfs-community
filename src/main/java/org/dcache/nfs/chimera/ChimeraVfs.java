@@ -420,23 +420,8 @@ public class ChimeraVfs extends AbstractBackEndProtocolSvc  implements VirtualFi
     public int access(Inode inode, int mode) throws IOException {
 
         int accessmask = mode;
-        if ((mode & (ACCESS4_MODIFY | ACCESS4_EXTEND)) != 0) {
-
-            FsInode fsInode = toFsInode(inode);
-            if (shouldRejectUpdates(fsInode)) {
-                accessmask ^= (ACCESS4_MODIFY | ACCESS4_EXTEND);
-            }
-        }
 
         return accessmask;
-    }
-
-    private boolean shouldRejectUpdates(FsInode fsInode) throws ChimeraFsException {
-        return fsInode.type() == FsInodeType.INODE
-                && fsInode.getLevel() == 0
-                && !fsInode.isDirectory()
-                && (!_fs.getInodeLocations(fsInode, StorageGenericLocation.TAPE).isEmpty()
-                    || !_fs.getInodeLocations(fsInode, StorageGenericLocation.DISK).isEmpty());
     }
 
     @Override
