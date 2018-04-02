@@ -348,7 +348,7 @@ public class DataServer {
         }
     }
 
-    public class DSOperationWRITE extends AbstractNFSv4Operation {
+    private class DSOperationWRITE extends AbstractNFSv4Operation {
 
         public DSOperationWRITE(nfs_argop4 args) {
             super(args, nfs_opnum4.OP_WRITE);
@@ -391,7 +391,7 @@ public class DataServer {
         }
     }
 
-    public class DSOperationREAD extends AbstractNFSv4Operation {
+    private class DSOperationREAD extends AbstractNFSv4Operation {
 
         public DSOperationREAD(nfs_argop4 args) {
             super(args, nfs_opnum4.OP_READ);
@@ -433,7 +433,7 @@ public class DataServer {
         }
     }
 
-    public class DSOperationCOMMIT extends AbstractNFSv4Operation {
+    private class DSOperationCOMMIT extends AbstractNFSv4Operation {
 
         public DSOperationCOMMIT(nfs_argop4 args) {
             super(args, nfs_opnum4.OP_COMMIT);
