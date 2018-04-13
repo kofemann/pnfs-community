@@ -236,7 +236,7 @@ public class DeviceManager implements NFSv41DeviceManager {
                 .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
                 .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
                 .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
-                .toArray(size -> new InetSocketAddress[size]);
+                .toArray(InetSocketAddress[]::new);
 
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
         return layoutDriver.getDeviceAddress(effectiveAddresses);
