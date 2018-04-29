@@ -8,7 +8,7 @@ RUN apk --update add openjdk8-jre python
 # Add dCache
 RUN mkdir -p /opt/pnfs
 RUN mkdir -p /opt/pnfs/db
-COPY maven/chimera-nfs-0.0.1-SNAPSHOT.jar /opt/pnfs/pnfs.jar
+COPY maven /opt/pnfs/jars
 
 # Run dCache as user 'dcache'
 RUN addgroup pnfs && adduser -S -G pnfs pnfs
