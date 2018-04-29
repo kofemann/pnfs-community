@@ -4,6 +4,23 @@
         xmlns="http://www.hazelcast.com/schema/config"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
+    <group>
+        <name>pnfs-community</name>
+    </group>
+
+    <properties>
+        <property name="hazelcast.discovery.enabled">false</property>
+    </properties>
+
+    <!-- explicit disable all networking option: single node mode -->
+    <network>
+        <join>
+            <multicast enabled="false" />
+            <tcp-ip enabled="true" />
+            <aws enabled="false" />
+        </join>
+    </network>
+
     <cache name="open-stateid">
          <key-type class-name="[B"/>
          <value-type class-name="[B"/>

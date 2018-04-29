@@ -3,7 +3,12 @@
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
+    <group>
+        <name>pnfs-community</name>
+    </group>
+
     <properties>
+        <property name="hazelcast.logging.type">slf4j</property>
         <property name="hazelcast.discovery.enabled">false</property>
     </properties>
 
