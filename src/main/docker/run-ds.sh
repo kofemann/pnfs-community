@@ -1,7 +1,8 @@
 #!/bin/sh
 
 # find the container id
-CONTAINER_ID=$(cat /proc/self/cgroup | egrep "cpu.*\:/" | head -1 |cut -d '-' -f 2 | cut -d '.' -f 1)
+# THE FORMAT OF /proc/self/cgroup depends on docker version
+CONTAINER_ID=$(cat /proc/self/cgroup | egrep "cpu.*\:/" | head -1 |cut -d '/' -f 3)
 
 PORT=`/agent-client.py ${CONTAINER_ID}`
 
