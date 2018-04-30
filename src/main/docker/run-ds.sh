@@ -1,10 +1,6 @@
 #!/bin/sh
 
-# find the container id
-# THE FORMAT OF /proc/self/cgroup depends on docker version
-CONTAINER_ID=$(cat /proc/self/cgroup | egrep "cpu.*\:/" | head -1 |cut -d '/' -f 3)
-
-PORT=`/agent-client.py ${CONTAINER_ID}`
+PORT=`/agent-client.py`
 
 echo "Staring DS on ${LOCALADDRESS}:${PORT}"
 
