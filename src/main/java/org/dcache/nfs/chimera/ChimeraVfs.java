@@ -65,7 +65,6 @@ import org.dcache.chimera.StorageLocatable;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.bep.AbstractBackEndProtocolSvc;
 import org.dcache.nfs.bep.SetSize;
-import org.dcache.nfs.bep.SetSizeMessageOuterClass.SetSizeMessage;
 import org.dcache.nfs.nfsstat;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadOwnerException;
