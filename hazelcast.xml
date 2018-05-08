@@ -10,6 +10,7 @@
 
     <properties>
         <property name="hazelcast.discovery.enabled">false</property>
+        <property name="hazelcast.phone.home.enabled">false</property>
     </properties>
 
     <!-- explicit disable all networking option: single node mode -->
