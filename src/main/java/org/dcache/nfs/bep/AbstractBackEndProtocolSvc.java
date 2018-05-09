@@ -1,10 +1,10 @@
 package org.dcache.nfs.bep;
 
 import java.io.IOException;
-import org.dcache.xdr.OncRpcException;
-import org.dcache.xdr.RpcCall;
-import org.dcache.xdr.RpcDispatchable;
-import org.dcache.xdr.XdrInt;
+import org.dcache.oncrpc4j.rpc.OncRpcException;
+import org.dcache.oncrpc4j.rpc.RpcCall;
+import org.dcache.oncrpc4j.rpc.RpcDispatchable;
+import org.dcache.oncrpc4j.xdr.XdrInt;
 
 /**
  *

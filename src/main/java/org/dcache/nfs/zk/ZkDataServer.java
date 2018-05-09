@@ -16,8 +16,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.atomic.AtomicValue;
 import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.dcache.utils.Bytes;
-import org.dcache.utils.net.InetSocketAddresses;
+import org.dcache.oncrpc4j.util.Bytes;
+import org.dcache.oncrpc4j.rpc.net.InetSocketAddresses;
 
 public class ZkDataServer {
 

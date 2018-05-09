@@ -73,7 +73,7 @@ import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
-import org.dcache.utils.Bytes;
+import org.dcache.oncrpc4j.util.Bytes;
 
 /**
  *
