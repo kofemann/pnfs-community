@@ -1,5 +1,5 @@
 # Minimalistic Java image
-FROM alpine:3.7
+FROM alpine:3.8
 MAINTAINER dCache "https://www.dcache.org"
 
 # Add JRE
