@@ -129,10 +129,11 @@ public class DataServer {
         svc.start();
 
         long myId = ZkDataServer.getOrAllocateId(zkCurator, idFile);
+        Mirror mirror = new Mirror(myId, localInetAddresses);
         zkNode = zkCurator.create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.EPHEMERAL)
-                .forPath(ZKPaths.makePath(Paths.ZK_PATH, Paths.ZK_PATH_NODE + myId), ZkDataServer.toBytes(localInetAddresses));
+                .forPath(ZKPaths.makePath(Paths.ZK_PATH, Paths.ZK_PATH_NODE + myId), ZkDataServer.toBytes(mirror));
 
         mdsStateIdCache = Caching
                 .getCachingProvider()

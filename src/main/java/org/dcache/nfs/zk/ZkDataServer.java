@@ -16,6 +16,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.atomic.AtomicValue;
 import org.apache.curator.framework.recipes.atomic.DistributedAtomicLong;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.dcache.nfs.Mirror;
 import org.dcache.oncrpc4j.util.Bytes;
 import org.dcache.oncrpc4j.rpc.net.InetSocketAddresses;
 
@@ -23,26 +24,29 @@ public class ZkDataServer {
 
     private static final String zkSequencePath = "/nfs/next-ds-id";
 
-    public static byte[] toBytes(InetSocketAddress... addrs) {
+    public static byte[] toBytes(Mirror mirror) {
         JSONObject o = new JSONObject();
         o.put("version", "1.0");
         JSONArray a = new JSONArray();
-        for (InetSocketAddress addr : addrs) {
+        for (InetSocketAddress addr : mirror.getMultipath()) {
             a.put(InetSocketAddresses.uaddrOf(addr));
         }
         o.put("address", a);
+        o.put("deviceid", mirror.getId());
+
         return o.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    public static InetSocketAddress[] stringToString(byte[] bytes) {
+    public static Mirror stringToString(byte[] bytes) {
 
         JSONObject o = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
         JSONArray a = o.getJSONArray("address");
+        long id = o.getLong("deviceid");
         InetSocketAddress[] addrs = new InetSocketAddress[a.length()];
         for (int i = 0; i < addrs.length; i++) {
             addrs[i] = InetSocketAddresses.forUaddrString(a.getString(i));
         }
-        return addrs;
+        return new Mirror(id, addrs);
     }
 
     public static long getOrAllocateId(CuratorFramework curator, String idFile) throws IOException {

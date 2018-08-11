@@ -284,19 +284,17 @@ public class DeviceManager implements NFSv41DeviceManager {
         return _supportedDrivers.keySet();
     }
 
-    private static deviceid4 deviceidOf(int id) {
+    private static deviceid4 deviceidOf(long id) {
         byte[] deviceidBytes = new byte[nfs4_prot.NFS4_DEVICEID4_SIZE];
-        Bytes.putInt(deviceidBytes, 0, id);
+        Bytes.putLong(deviceidBytes, 0, id);
 
         return new deviceid4(deviceidBytes);
     }
 
     private void addDS(String node) throws Exception {
-        String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
-        int deviceId = Integer.parseInt(id);
         byte[] data = zkCurator.getData().forPath(node);
-        InetSocketAddress[] address = ZkDataServer.stringToString(data);
-        _deviceMap.put(deviceidOf(deviceId), address);
+        Mirror mirror = ZkDataServer.stringToString(data);
+        _deviceMap.put(deviceidOf(mirror.getId()), mirror.getMultipath());
     }
 
     private void removeDS(String node) throws Exception {
