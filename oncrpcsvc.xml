@@ -140,14 +140,14 @@
     </bean>
 
     <!-- NFSv4 programm -->
-    <bean id="nfsv4-programm" class="org.dcache.xdr.OncRpcProgram">
+    <bean id="nfsv4-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">
         <description>NFSv4.1 programm number</description>
         <constructor-arg index="0" value="100003" />
         <constructor-arg index="1" value="4" />
     </bean>
 
     <!-- NFSv4 programm -->
-    <bean id="bep-programm" class="org.dcache.xdr.OncRpcProgram">
+    <bean id="bep-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">
         <description>Back-end-protocol programm number</description>
         <constructor-arg index="0" value="170001" />
         <constructor-arg index="1" value="1" />
@@ -156,7 +156,7 @@
     <!--
         ONC RPC service
     -->
-    <bean id="oncrpcsvc-builder" class="org.dcache.xdr.OncRpcSvcFactoryBean">
+    <bean id="oncrpcsvc-builder" class="org.dcache.oncrpc4j.spring.OncRpcSvcFactoryBean">
         <description>Onc RPC service builder for MDS</description>
         <property name="port" value="${mds.port}"/>
         <property name="useTCP" value="true"/>
@@ -165,7 +165,7 @@
         <property name="useWorkerPool" value="true"/>
     </bean>
 
-    <bean id="oncrpcsvc" class="org.dcache.xdr.OncRpcSvc"
+    <bean id="oncrpcsvc" class="org.dcache.oncrpc4j.rpc.OncRpcSvc"
           init-method="start" destroy-method="stop">
         <description>Onc RPC service for MDS</description>
         <constructor-arg ref="oncrpcsvc-builder"/>
