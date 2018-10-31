@@ -36,12 +36,13 @@ services:
     - "./hazelcast.xml:/hazelcast.xml"
 
   mds:
-    image: dcache/pnfs-community-mds
+    image: dcache/pnfs-community
     depends_on:
     - hz
     - zk
     environment:
     - JAVA_OPT=
+    command: mds
     links:
     - zk:zk-host
     - hz:hz-host
@@ -55,7 +56,7 @@ services:
     - ./chimera.properties:/opt/pnfs/chimera.properties
 
   ds:
-    image: dcache/pnfs-community-ds
+    image: dcache/pnfs-community
     depends_on:
     - hz
     - zk
@@ -64,6 +65,7 @@ services:
     environment:
     - LOCALADDRESS=${LOCAL_ADDRESS}
     - JAVA_OPT=
+    command: ds
     links:
     - zk:zk-host
     - hz:hz-host

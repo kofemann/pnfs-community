@@ -55,18 +55,9 @@
                 <configuration>
                     <images>
                         <image>
-                            <name>%g/pnfs-community-mds:%l</name>
+                            <name>%g/pnfs-community:%l</name>
                             <build>
-                                <dockerFile>${project.basedir}/src/main/docker/Dockerfile.mds</dockerFile>
-                                <assembly>
-                                    <descriptorRef>artifact-with-dependencies</descriptorRef>
-                                </assembly>
-                            </build>
-                        </image>
-                        <image>
-                            <name>%g/pnfs-community-ds:%l</name>
-                            <build>
-                                <dockerFile>${project.basedir}/src/main/docker/Dockerfile.ds</dockerFile>
+                                <dockerFile>${project.basedir}/src/main/docker/Dockerfile</dockerFile>
                                 <assembly>
                                     <descriptorRef>artifact-with-dependencies</descriptorRef>
                                 </assembly>

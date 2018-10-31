@@ -14,9 +14,9 @@ COPY maven /opt/pnfs/jars
 RUN addgroup pnfs && adduser -S -G pnfs pnfs
 
 # add external files into container at the build time
-COPY run-ds.sh /run-ds.sh
+COPY run.sh /run.sh
 COPY agent-client.py /agent-client.py
-RUN chmod +x /run-ds.sh /agent-client.py
+RUN chmod +x /run.sh /agent-client.py
 
 # where we store the data
 RUN mkdir /data
@@ -28,10 +28,12 @@ RUN chown -R pnfs:pnfs /opt/pnfs
 RUN chown -R pnfs:pnfs /var/run/pnfs
 
 # expose TCP ports for network services
-EXPOSE 2052
+EXPOSE 2049 2052
 
 # run as user pnfs
 USER pnfs
 
-# default domain
-CMD ["/run-ds.sh"]
+ENTRYPOINT ["/run.sh"]
+
+# by default we start DS
+CMD ["ds"]
