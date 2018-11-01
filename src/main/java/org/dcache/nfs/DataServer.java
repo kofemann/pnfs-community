@@ -3,6 +3,9 @@ package org.dcache.nfs;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.net.HostAndPort;
+import com.google.protobuf.ByteString;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
@@ -22,10 +25,11 @@ import javax.security.auth.Subject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
-import org.dcache.nfs.bep.SetSize;
+import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.FileSize;
+import org.dcache.nfs.bep.StatusCode;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadStateidException;
-import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
 import org.dcache.nfs.v4.CompoundContext;
@@ -52,7 +56,6 @@ import org.dcache.nfs.v4.xdr.WRITE4resok;
 import org.dcache.nfs.v4.xdr.count4;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
-import org.dcache.nfs.v4.xdr.nfs_fh4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
 import org.dcache.nfs.v4.xdr.nfs_resop4;
 import org.dcache.nfs.v4.xdr.nfsace4;
@@ -66,15 +69,10 @@ import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
-import org.dcache.oncrpc4j.rpc.net.IpProtocolType;
-import org.dcache.oncrpc4j.rpc.OncRpcClient;
 import org.dcache.oncrpc4j.rpc.OncRpcException;
 import org.dcache.oncrpc4j.rpc.OncRpcProgram;
 import org.dcache.oncrpc4j.rpc.OncRpcSvc;
 import org.dcache.oncrpc4j.rpc.OncRpcSvcBuilder;
-import org.dcache.oncrpc4j.rpc.RpcAuthTypeNone;
-import org.dcache.oncrpc4j.rpc.RpcCall;
-import org.dcache.oncrpc4j.xdr.XdrInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +94,9 @@ public class DataServer {
     // we use 'other' part of stateid as sequence number can change
     private Cache<byte[], byte[]> mdsStateIdCache;
 
-    private RpcCall bepClient;
+
+    private ManagedChannel channel;
+    private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
 
     /**
      * Set TCP port number used by data server.
@@ -139,6 +139,14 @@ public class DataServer {
                 .getCachingProvider()
                 .getCacheManager()
                 .getCache("open-stateid", byte[].class, byte[].class);
+
+        channel = ManagedChannelBuilder
+                .forAddress("mds", 2017)
+                .usePlaintext() // disable SSL
+                .build();
+
+        blockingStub = FileAttributeServiceGrpc
+                .newBlockingStub(channel);
     }
 
     public void setIoChannelCache(IoChannelCache fsCache) {
@@ -447,29 +455,18 @@ public class DataServer {
 
             Inode inode = context.currentInode();
             RandomAccessFile out = fsc.get(inode);
-            SetSize ss = new SetSize(new nfs_fh4(inode.toNfsHandle()), out.length());
-            XdrInt ssRes = new XdrInt();
-            RpcCall r = getBepClient();
-            r.call(1, ss, ssRes);
 
-            res.status = ssRes.intValue();
-            if (res.status == nfsstat.NFS_OK) {
-                res.resok4 = new COMMIT4resok();
-                res.resok4.writeverf = context.getRebootVerifier();
-            }
+            FileSize size = FileSize.newBuilder()
+                    .setSize(out.length())
+                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+                    .build();
+            StatusCode status = blockingStub.setFileSiz(size);
+
+            res.status = status.getStatus();
+            nfsstat.throwIfNeeded(res.status);
+
+            res.resok4 = new COMMIT4resok();
+            res.resok4.writeverf = context.getRebootVerifier();
         }
-    }
-
-    private RpcCall getBepClient() throws DelayException {
-
-        if (bepClient == null || !bepClient.getTransport().isOpen()) {
-            try {
-                bepClient = new RpcCall(170001, 1, new RpcAuthTypeNone(),
-                        new OncRpcClient(InetAddress.getByName("mds"), IpProtocolType.TCP, 2049).connect());
-            } catch (IOException e) {
-                throw new DelayException("fales to get BEP client", e);
-            }
-        }
-        return bepClient;
     }
 }

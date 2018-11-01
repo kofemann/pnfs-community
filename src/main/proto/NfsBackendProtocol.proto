@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.dcache.nfs.bep";
+option java_outer_classname = "NfsBackendProto";
+option objc_class_prefix = "BEP";
+
+package pnfs;
+
+service FileAttributeService {
+    rpc SetFileSiz (FileSize) returns (StatusCode);
+}
+
+message FileSize {
+    bytes fh = 1;
+    uint64 size = 2;
+}
+
+message StatusCode {
+    uint32 status = 1;
+}
+

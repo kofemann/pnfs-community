@@ -77,6 +77,13 @@
         <constructor-arg ref="tx-manager" />
     </bean>
 
+
+    <bean id="bep" class="org.dcache.nfs.BackendServer" init-method="init" destroy-method="shutdown">
+        <description>pNFS backend control protocol service</description>
+        <property name="fs" ref="fileSystem" />
+    </bean>
+
+
     <bean id="vfs-intern" class="org.dcache.nfs.chimera.ChimeraVfs">
         <description>Chimera Filesystem</description>
         <constructor-arg ref="fileSystem"/>
@@ -146,13 +153,6 @@
         <constructor-arg index="1" value="4" />
     </bean>
 
-    <!-- NFSv4 programm -->
-    <bean id="bep-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">
-        <description>Back-end-protocol programm number</description>
-        <constructor-arg index="0" value="170001" />
-        <constructor-arg index="1" value="1" />
-    </bean>
-
     <!--
         ONC RPC service
     -->
@@ -172,7 +172,6 @@
         <property name="programs">
             <map>
                 <entry key-ref="nfsv4-programm" value-ref="mds"/>
-                <entry key-ref="bep-programm" value-ref="vfs-intern"/>
             </map>
         </property>
     </bean>
