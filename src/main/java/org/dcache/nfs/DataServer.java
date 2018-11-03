@@ -460,7 +460,7 @@ public class DataServer {
                     .setSize(out.length())
                     .setFh(ByteString.copyFrom(inode.toNfsHandle()))
                     .build();
-            StatusCode status = blockingStub.setFileSiz(size);
+            StatusCode status = blockingStub.setFileSize(size);
 
             res.status = status.getStatus();
             nfsstat.throwIfNeeded(res.status);

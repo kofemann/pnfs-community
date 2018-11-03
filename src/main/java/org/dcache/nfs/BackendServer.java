@@ -58,7 +58,7 @@ public class BackendServer {
     private class FileAttributeService extends FileAttributeServiceGrpc.FileAttributeServiceImplBase {
 
         @Override
-        public void setFileSiz(FileSize request, StreamObserver<StatusCode> responseObserver) {
+        public void setFileSize(FileSize request, StreamObserver<StatusCode> responseObserver) {
             long size = request.getSize();
             byte[] fh = request.getFh().toByteArray();
 
