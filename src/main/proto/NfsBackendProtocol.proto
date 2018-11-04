@@ -8,15 +8,15 @@ option objc_class_prefix = "BEP";
 package pnfs;
 
 service FileAttributeService {
-    rpc SetFileSize (FileSize) returns (StatusCode) {}
+    rpc SetFileSize (SetFileSizeRequest) returns (SetFileSizeResponse) {}
 }
 
-message FileSize {
+message SetFileSizeRequest {
     bytes fh = 1;
     uint64 size = 2;
 }
 
-message StatusCode {
+message SetFileSizeResponse {
     uint32 status = 1;
 }
 

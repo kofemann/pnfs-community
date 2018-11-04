@@ -26,8 +26,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
-import org.dcache.nfs.bep.FileSize;
-import org.dcache.nfs.bep.StatusCode;
+import org.dcache.nfs.bep.SetFileSizeRequest;
+import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadStateidException;
 import org.dcache.nfs.status.NfsIoException;
@@ -456,11 +456,11 @@ public class DataServer {
             Inode inode = context.currentInode();
             RandomAccessFile out = fsc.get(inode);
 
-            FileSize size = FileSize.newBuilder()
+            SetFileSizeRequest size = SetFileSizeRequest.newBuilder()
                     .setSize(out.length())
                     .setFh(ByteString.copyFrom(inode.toNfsHandle()))
                     .build();
-            StatusCode status = blockingStub.setFileSize(size);
+            SetFileSizeResponse status = blockingStub.setFileSize(size);
 
             res.status = status.getStatus();
             nfsstat.throwIfNeeded(res.status);

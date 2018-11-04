@@ -11,8 +11,8 @@ import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.chimera.JdbcFs;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
-import org.dcache.nfs.bep.FileSize;
-import org.dcache.nfs.bep.StatusCode;
+import org.dcache.nfs.bep.SetFileSizeRequest;
+import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.vfs.Inode;
 
@@ -58,7 +58,7 @@ public class BackendServer {
     private class FileAttributeService extends FileAttributeServiceGrpc.FileAttributeServiceImplBase {
 
         @Override
-        public void setFileSize(FileSize request, StreamObserver<StatusCode> responseObserver) {
+        public void setFileSize(SetFileSizeRequest request, StreamObserver<SetFileSizeResponse> responseObserver) {
             long size = request.getSize();
             byte[] fh = request.getFh().toByteArray();
 
@@ -73,7 +73,7 @@ public class BackendServer {
                 status = nfsstat.NFSERR_IO;
             }
 
-            StatusCode reply = StatusCode.newBuilder().setStatus(status).build();
+            SetFileSizeResponse reply = SetFileSizeResponse.newBuilder().setStatus(status).build();
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }
