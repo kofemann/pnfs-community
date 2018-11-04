@@ -4,16 +4,12 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.apache.curator.framework.CuratorFramework;
-import org.dcache.chimera.ChimeraFsException;
-import org.dcache.chimera.FsInode;
-import org.dcache.chimera.FsInodeType;
-import org.dcache.chimera.JdbcFs;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.GetFileSizeRequest;
+import org.dcache.nfs.bep.GetFileSizeResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
-import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.vfs.Inode;
 
 /**
@@ -21,7 +17,7 @@ import org.dcache.nfs.vfs.Inode;
  */
 public class BackendServer {
 
-    private JdbcFs fs;
+    private IoChannelCache fs;
     private int port;
     private Server server;
 
@@ -30,7 +26,7 @@ public class BackendServer {
      */
     private CuratorFramework zkCurator;
 
-    public void setFs(JdbcFs fs) {
+    public void setFs(IoChannelCache fs) {
         this.fs = fs;
     }
 
@@ -64,11 +60,7 @@ public class BackendServer {
 
             int status = nfsstat.NFS_OK;
             try {
-                FsInode fsInode = toFsInode(new Inode(fh));
-                org.dcache.chimera.posix.Stat stat = new org.dcache.chimera.posix.Stat();
-                stat.setSize(size);
-                fs.setInodeAttributes(fsInode, 0, stat);
-
+                fs.get(new Inode(fh)).setLength(size);
             } catch (IOException e) {
                 status = nfsstat.NFSERR_IO;
             }
@@ -77,54 +69,29 @@ public class BackendServer {
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }
-    }
 
-    private FsInode toFsInode(Inode inode) throws IOException {
-        return inodeFromBytes(inode.getFileId());
-    }
+        @Override
+        public void getFileSize(GetFileSizeRequest request, StreamObserver<GetFileSizeResponse> responseObserver) {
 
-    /**
-     * Get a {code FsInode} corresponding to provided bytes.
-     *
-     * @param handle to construct inode from.
-     * @return object inode.
-     * @throws ChimeraFsException
-     */
-    public FsInode inodeFromBytes(byte[] handle) throws BadHandleException {
-        FsInode inode;
+            byte[] fh = request.getFh().toByteArray();
+            int status = nfsstat.NFS_OK;
+            long size = 0;
 
-        if (handle.length < 4) {
-            throw new BadHandleException("Bad file handle");
+            try {
+                size = fs.get(new Inode(fh)).length();
+            } catch (IOException e) {
+                status = nfsstat.NFSERR_IO;
+            }
+
+            GetFileSizeResponse reply = GetFileSizeResponse.newBuilder()
+                    .setStatus(status)
+                    .setSize(size)
+                    .build();
+
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+
         }
-
-        ByteBuffer b = ByteBuffer.wrap(handle);
-        int fsid = b.get();
-        int type = b.get();
-        int len = b.get(); // eat the file id size.
-        long ino = b.getLong();
-        int opaqueLen = b.get();
-        if (opaqueLen > b.remaining()) {
-            throw new BadHandleException("Bad/old file handle");
-        }
-
-        FsInodeType inodeType = FsInodeType.valueOf(type);
-
-        switch (inodeType) {
-            case INODE:
-                if (opaqueLen != 1) {
-                    throw new BadHandleException("Bad file handle: invalid level len :" + opaqueLen);
-                }
-                int level = b.get() - 0x30; // 0x30 is ascii code for '0'
-                if (level != 0) {
-                    throw new BadHandleException("Bad file handle: invalid level:" + level);
-                }
-                inode = new FsInode(fs, ino, level);
-                break;
-            default:
-                // no other fansy types
-                throw new BadHandleException("Unsupported file handle type: " + inodeType);
-        }
-        return inode;
     }
 
 }

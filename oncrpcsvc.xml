@@ -77,13 +77,6 @@
         <constructor-arg ref="tx-manager" />
     </bean>
 
-
-    <bean id="bep" class="org.dcache.nfs.BackendServer" init-method="init" destroy-method="shutdown">
-        <description>pNFS backend control protocol service</description>
-        <property name="fs" ref="fileSystem" />
-    </bean>
-
-
     <bean id="vfs-intern" class="org.dcache.nfs.chimera.ChimeraVfs">
         <description>Chimera Filesystem</description>
         <constructor-arg ref="fileSystem"/>

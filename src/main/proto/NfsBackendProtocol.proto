@@ -9,6 +9,7 @@ package pnfs;
 
 service FileAttributeService {
     rpc SetFileSize (SetFileSizeRequest) returns (SetFileSizeResponse) {}
+    rpc GetFileSize (GetFileSizeRequest) returns (GetFileSizeResponse) {}
 }
 
 message SetFileSizeRequest {
@@ -18,5 +19,15 @@ message SetFileSizeRequest {
 
 message SetFileSizeResponse {
     uint32 status = 1;
+}
+
+
+message GetFileSizeRequest {
+    bytes fh = 1;
+}
+
+message GetFileSizeResponse {
+    uint32 status = 1;
+    uint64 size = 2;
 }
 

@@ -20,6 +20,9 @@
 package org.dcache.nfs;
 
 import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.dcache.nfs.v4.xdr.layout4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.v4.xdr.nfs_fh4;
@@ -47,10 +50,14 @@ import javax.cache.Cache;
 import javax.cache.Caching;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.GetFileSizeRequest;
+import org.dcache.nfs.bep.GetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
 import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutTryLaterException;
 import org.dcache.nfs.status.LayoutUnavailableException;
+import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
@@ -71,6 +78,7 @@ import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.Inode;
+import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
 import org.dcache.oncrpc4j.util.Bytes;
@@ -114,6 +122,13 @@ public class DeviceManager implements NFSv41DeviceManager {
     private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
 
     private ChimeraVfs fs;
+
+
+
+
+    // gRPC channel and co.
+    private ManagedChannel channel;
+    private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
@@ -166,6 +181,15 @@ public class DeviceManager implements NFSv41DeviceManager {
             }
         });
         dsNodeCache.start();
+
+        channel = ManagedChannelBuilder
+                .forAddress("ds", 2017)
+                .usePlaintext() // disable SSL
+                .build();
+
+        blockingStub = FileAttributeServiceGrpc
+                .newBlockingStub(channel);
+
     }
     /*
      * (non-Javadoc)
@@ -263,6 +287,28 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
         _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
+
+        Inode inode = context.currentInode();
+        GetFileSizeRequest request = GetFileSizeRequest
+                .newBuilder()
+                .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+                .build();
+
+        try {
+            GetFileSizeResponse response = blockingStub.getFileSize(request);
+            if (response.getStatus() == nfsstat.NFS_OK) {
+                long newSize = response.getSize();
+                Stat stat = fs.getattr(inode);
+                if (newSize > stat.getSize()) {
+                    Stat newStat = new Stat();
+                    newStat.setSize(newSize);
+                    fs.setattr(inode, newStat);
+                }
+            }
+        } catch (IOException e) {
+            throw new NfsIoException("failed to update filesize", e);
+        }
+
         getLayoutDriver(layoutType).acceptLayoutReturnData(body);
     }
 

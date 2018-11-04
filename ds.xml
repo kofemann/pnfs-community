@@ -36,6 +36,12 @@
         <property name="lastAccess" value="30" />
     </bean>
 
+    <!-- Backend protocol -->
+    <bean id="bep" class="org.dcache.nfs.BackendServer" init-method="init" destroy-method="shutdown">
+        <description>pNFS backend control protocol service</description>
+        <property name="fs" ref="ds-data-pool" />
+    </bean>
+
     <!--
         NFSv4.1 pNFS Data Server manager
     -->

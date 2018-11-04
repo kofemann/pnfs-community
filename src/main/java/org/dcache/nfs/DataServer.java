@@ -95,9 +95,6 @@ public class DataServer {
     private Cache<byte[], byte[]> mdsStateIdCache;
 
 
-    private ManagedChannel channel;
-    private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
-
     /**
      * Set TCP port number used by data server.
      *
@@ -139,14 +136,6 @@ public class DataServer {
                 .getCachingProvider()
                 .getCacheManager()
                 .getCache("open-stateid", byte[].class, byte[].class);
-
-        channel = ManagedChannelBuilder
-                .forAddress("mds", 2017)
-                .usePlaintext() // disable SSL
-                .build();
-
-        blockingStub = FileAttributeServiceGrpc
-                .newBlockingStub(channel);
     }
 
     public void setIoChannelCache(IoChannelCache fsCache) {
@@ -395,7 +384,7 @@ public class DataServer {
             res.status = nfsstat.NFS_OK;
             res.resok4 = new WRITE4resok();
             res.resok4.count = new count4(bytesWritten);
-            res.resok4.committed = stable_how4.UNSTABLE4;
+            res.resok4.committed = stable_how4.FILE_SYNC4;
             res.resok4.writeverf = context.getRebootVerifier();
         }
     }
@@ -456,15 +445,9 @@ public class DataServer {
             Inode inode = context.currentInode();
             RandomAccessFile out = fsc.get(inode);
 
-            SetFileSizeRequest size = SetFileSizeRequest.newBuilder()
-                    .setSize(out.length())
-                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
-                    .build();
-            SetFileSizeResponse status = blockingStub.setFileSize(size);
+            out.getFD().sync();
 
-            res.status = status.getStatus();
-            nfsstat.throwIfNeeded(res.status);
-
+            res.status = nfsstat.NFS_OK;
             res.resok4 = new COMMIT4resok();
             res.resok4.writeverf = context.getRebootVerifier();
         }
