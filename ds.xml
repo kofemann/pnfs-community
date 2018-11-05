@@ -36,12 +36,6 @@
         <property name="lastAccess" value="30" />
     </bean>
 
-    <!-- Backend protocol -->
-    <bean id="bep" class="org.dcache.nfs.BackendServer" init-method="init" destroy-method="shutdown">
-        <description>pNFS backend control protocol service</description>
-        <property name="fs" ref="ds-data-pool" />
-    </bean>
-
     <!--
         NFSv4.1 pNFS Data Server manager
     -->
@@ -51,6 +45,7 @@
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioChannelCache" ref="ds-data-pool" />
         <property name="idFile" value="${idfile}" />
+        <property name="bepPort" value="${bepPort}" />
     </bean>
 
     <bean id="zk-curator-factory" class="org.dcache.nfs.zk.Curator4Spring">

@@ -77,6 +77,7 @@ public class DataServer {
 
     private CuratorFramework zkCurator;
     private int port;
+    private int bepPort;
     private InetSocketAddress[] localInetAddresses;
     private String zkNode;
 
@@ -89,6 +90,8 @@ public class DataServer {
     private Cache<byte[], byte[]> mdsStateIdCache;
 
 
+    private BackendServer bepSrv;
+
     /**
      * Set TCP port number used by data server.
      *
@@ -96,6 +99,10 @@ public class DataServer {
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public void setBepPort(int port) {
+        this.bepPort = port;
     }
 
     public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -118,9 +125,11 @@ public class DataServer {
                 .build();
 
         svc.start();
+        bepSrv = new BackendServer(bepPort, fsc);
+        InetSocketAddress[] bep = getLocalBepAddresses(bepPort);
 
         long myId = ZkDataServer.getOrAllocateId(zkCurator, idFile);
-        Mirror mirror = new Mirror(myId, localInetAddresses);
+        Mirror mirror = new Mirror(myId, localInetAddresses, bep);
         zkNode = zkCurator.create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.EPHEMERAL)
@@ -130,6 +139,7 @@ public class DataServer {
                 .getCachingProvider()
                 .getCacheManager()
                 .getCache("open-stateid", byte[].class, byte[].class);
+
     }
 
     public void setIoChannelCache(IoChannelCache fsCache) {
@@ -142,6 +152,7 @@ public class DataServer {
 
     public void destroy() throws Exception {
         svc.stop();
+        bepSrv.shutdown();
         zkCurator.delete().forPath(zkNode);
     }
 
@@ -176,6 +187,25 @@ public class DataServer {
                     .map(s -> new InetSocketAddress(s.getHost(), s.getPort()))
                     .toArray(InetSocketAddress[]::new);
         }
+    }
+
+    private InetSocketAddress[] getLocalBepAddresses(int port) throws SocketException {
+        List<InetSocketAddress> localaddresses = new ArrayList<>();
+
+        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+        while (ifaces.hasMoreElements()) {
+            NetworkInterface iface = ifaces.nextElement();
+            if (!iface.isUp() || iface.getName().startsWith("br-")) {
+                continue;
+            }
+
+            Enumeration<InetAddress> addrs = iface.getInetAddresses();
+            while (addrs.hasMoreElements()) {
+                InetAddress addr = addrs.nextElement();
+                localaddresses.add(new InetSocketAddress(addr, port));
+            }
+        }
+        return localaddresses.toArray(new InetSocketAddress[0]);
     }
 
     private final VirtualFileSystem VFS = new VirtualFileSystem() {

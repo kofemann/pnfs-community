@@ -54,9 +54,7 @@ import org.dcache.nfs.bep.FileAttributeServiceGrpc;
 import org.dcache.nfs.bep.GetFileSizeRequest;
 import org.dcache.nfs.bep.GetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
-import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutTryLaterException;
-import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
@@ -94,11 +92,15 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
 
-    private final Map<deviceid4, InetSocketAddress[]> _deviceMap =
+    private final Map<deviceid4, DS> _deviceMap =
             new ConcurrentHashMap<>();
 
     // we need to return same layout stateid, as long as it's not returned
     private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
+
+
+        // we need to return same layout stateid, as long as it's not returned
+    private final Map<stateid4, deviceid4[]> _layoutStateidTodevice = new ConcurrentHashMap<>();
 
     /**
      * Zookeeper client.
@@ -122,13 +124,6 @@ public class DeviceManager implements NFSv41DeviceManager {
     private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
 
     private ChimeraVfs fs;
-
-
-
-
-    // gRPC channel and co.
-    private ManagedChannel channel;
-    private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
@@ -182,14 +177,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         });
         dsNodeCache.start();
 
-        channel = ManagedChannelBuilder
-                .forAddress("ds", 2017)
-                .usePlaintext() // disable SSL
-                .build();
-
-        blockingStub = FileAttributeServiceGrpc
-                .newBlockingStub(channel);
-
     }
     /*
      * (non-Javadoc)
@@ -215,6 +202,7 @@ public class DeviceManager implements NFSv41DeviceManager {
         if(layoutStateId == null) {
             layoutStateId = client.createState(openState.getStateOwner(), openState);
             _openToLayoutStateid.put(stateid, layoutStateId);
+            _layoutStateidTodevice.put(layoutStateId.stateid(), deviceId);
 
             mdsStateIdCache.put(rawOpenState.other, context.currentInode().toNfsHandle());
             nfsState.addDisposeListener(
@@ -249,7 +237,7 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
 
-        InetSocketAddress[] addrs = _deviceMap.get(deviceId);
+        InetSocketAddress[] addrs = _deviceMap.get(deviceId).addr;
         if (addrs == null) {
             throw new NoEntException("Unknown device id: " + deviceId);
         }
@@ -294,8 +282,10 @@ public class DeviceManager implements NFSv41DeviceManager {
                 .setFh(ByteString.copyFrom(inode.toNfsHandle()))
                 .build();
 
+        deviceid4[] devices = _layoutStateidTodevice.get(stateid);
+        DS ds = _deviceMap.get(devices[0]);
         try {
-            GetFileSizeResponse response = blockingStub.getFileSize(request);
+            GetFileSizeResponse response = ds.blockingStub.getFileSize(request);
             if (response.getStatus() == nfsstat.NFS_OK) {
                 long newSize = response.getSize();
                 Stat stat = fs.getattr(inode);
@@ -340,7 +330,21 @@ public class DeviceManager implements NFSv41DeviceManager {
     private void addDS(String node) throws Exception {
         byte[] data = zkCurator.getData().forPath(node);
         Mirror mirror = ZkDataServer.stringToString(data);
-        _deviceMap.put(deviceidOf(mirror.getId()), mirror.getMultipath());
+
+        DS ds = new DS();
+        ds.addr = mirror.getMultipath();
+
+        System.out.println("bep addr: " + mirror.getBepAddress()[0]);
+        ds.channel = ManagedChannelBuilder
+                .forAddress(mirror.getBepAddress()[0].getAddress().getHostAddress(), mirror.getBepAddress()[0].getPort())
+                .usePlaintext() // disable SSL
+                .build();
+
+        ds.blockingStub = FileAttributeServiceGrpc
+                .newBlockingStub(ds.channel);
+
+
+        _deviceMap.put(deviceidOf(mirror.getId()), ds);
     }
 
     private void removeDS(String node) throws Exception {
@@ -413,6 +417,16 @@ public class DeviceManager implements NFSv41DeviceManager {
         }
 
         return deviceId;
+    }
+
+
+    private static class DS {
+        // gRPC channel and co.
+
+        private ManagedChannel channel;
+        private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
+        private InetSocketAddress[] addr;
+
     }
 
 }

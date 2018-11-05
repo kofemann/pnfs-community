@@ -4,7 +4,6 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import org.apache.curator.framework.CuratorFramework;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
 import org.dcache.nfs.bep.GetFileSizeRequest;
 import org.dcache.nfs.bep.GetFileSizeResponse;
@@ -17,31 +16,13 @@ import org.dcache.nfs.vfs.Inode;
  */
 public class BackendServer {
 
-    private IoChannelCache fs;
-    private int port;
-    private Server server;
+    private final IoChannelCache fs;
+    private final Server server;
 
-    /**
-     * Zookeeper client.
-     */
-    private CuratorFramework zkCurator;
-
-    public void setFs(IoChannelCache fs) {
+    public BackendServer(int port, IoChannelCache fs) throws IOException {
         this.fs = fs;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setZkCurator(CuratorFramework zkCurator) {
-        this.zkCurator = zkCurator;
-    }
-
-
-    public void init() throws IOException {
         server = ServerBuilder
-                .forPort(2017)
+                .forPort(port)
                 .addService(new FileAttributeService())
                 .build();
         server.start();
