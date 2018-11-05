@@ -384,7 +384,7 @@ public class DataServer {
             res.status = nfsstat.NFS_OK;
             res.resok4 = new WRITE4resok();
             res.resok4.count = new count4(bytesWritten);
-            res.resok4.committed = stable_how4.FILE_SYNC4;
+            res.resok4.committed = stable_how4.DATA_SYNC4;
             res.resok4.writeverf = context.getRebootVerifier();
         }
     }
