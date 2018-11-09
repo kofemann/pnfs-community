@@ -20,7 +20,6 @@
 package org.dcache.nfs;
 
 import com.google.common.io.BaseEncoding;
-import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.dcache.nfs.v4.xdr.layout4;
@@ -37,7 +36,9 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import org.dcache.nfs.status.NoEntException;
 import java.util.List;
@@ -51,11 +52,8 @@ import javax.cache.Caching;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
-import org.dcache.nfs.bep.GetFileSizeRequest;
-import org.dcache.nfs.bep.GetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
 import org.dcache.nfs.status.LayoutTryLaterException;
-import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
@@ -77,7 +75,6 @@ import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.Inode;
-import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
 import org.dcache.oncrpc4j.util.Bytes;
@@ -98,10 +95,6 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     // we need to return same layout stateid, as long as it's not returned
     private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
-
-
-        // we need to return same layout stateid, as long as it's not returned
-    private final Map<stateid4, deviceid4[]> _layoutStateidTodevice = new ConcurrentHashMap<>();
 
     /**
      * Zookeeper client.
@@ -204,8 +197,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         if(layoutStateId == null) {
             layoutStateId = client.createState(openState.getStateOwner(), openState);
             _openToLayoutStateid.put(stateid, layoutStateId);
-            _layoutStateidTodevice.put(layoutStateId.stateid(), deviceId);
-
             mdsStateIdCache.put(rawOpenState.other, context.currentInode().toNfsHandle());
             nfsState.addDisposeListener(
                     state -> {
@@ -239,10 +230,12 @@ public class DeviceManager implements NFSv41DeviceManager {
 
         _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
 
-        InetSocketAddress[] addrs = _deviceMap.get(deviceId).addr;
-        if (addrs == null) {
+        DS ds = _deviceMap.get(deviceId);
+        if (ds == null) {
             throw new NoEntException("Unknown device id: " + deviceId);
         }
+
+        InetSocketAddress[] addrs = ds.addr;
 
         // limit addresses returned to client to the same 'type' as clients own address
         InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
@@ -277,30 +270,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
         _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
-
-        Inode inode = context.currentInode();
-        GetFileSizeRequest request = GetFileSizeRequest
-                .newBuilder()
-                .setFh(ByteString.copyFrom(inode.toNfsHandle()))
-                .build();
-
-        deviceid4[] devices = _layoutStateidTodevice.get(stateid);
-        DS ds = _deviceMap.get(devices[0]);
-        try {
-            GetFileSizeResponse response = ds.blockingStub.getFileSize(request);
-            if (response.getStatus() == nfsstat.NFS_OK) {
-                long newSize = response.getSize();
-                Stat stat = fs.getattr(inode);
-                if (newSize > stat.getSize()) {
-                    Stat newStat = new Stat();
-                    newStat.setSize(newSize);
-                    fs.setattr(inode, newStat);
-                }
-            }
-        } catch (IOException e) {
-            throw new NfsIoException("failed to update filesize", e);
-        }
-
         getLayoutDriver(layoutType).acceptLayoutReturnData(body);
     }
 
@@ -336,7 +305,6 @@ public class DeviceManager implements NFSv41DeviceManager {
         DS ds = new DS();
         ds.addr = mirror.getMultipath();
 
-        System.out.println("bep addr: " + mirror.getBepAddress()[0]);
         ds.channel = ManagedChannelBuilder
                 .forAddress(mirror.getBepAddress()[0].getAddress().getHostAddress(), mirror.getBepAddress()[0].getPort())
                 .usePlaintext() // disable SSL
@@ -385,7 +353,9 @@ public class DeviceManager implements NFSv41DeviceManager {
                 throw new ServerFaultException("invalid location size");
             }
 
-            ByteBuffer b = ByteBuffer.wrap(raw);
+            ByteBuffer b = ByteBuffer
+                .wrap(raw)
+                .order(ByteOrder.BIG_ENDIAN);
 
             deviceId = new deviceid4[raw.length / Short.BYTES];
             for (int i = 0; i < deviceId.length; i++) {
@@ -400,19 +370,22 @@ public class DeviceManager implements NFSv41DeviceManager {
             }
 
             int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
+            ByteBuffer b = ByteBuffer
+                .allocate(Short.BYTES * mirrors)
+                .order(ByteOrder.BIG_ENDIAN);
 
-            ByteBuffer b = ByteBuffer.allocate(Short.BYTES * mirrors);
             deviceId = _deviceMap.keySet().stream()
                     .unordered()
                     .limit(mirrors)
-                    .peek(d -> b.putShort((short) Bytes.getInt(d.value, 0)))
+                    .peek(d -> b.putShort((short)Bytes.getLong(d.value, 0)))
                     .toArray(deviceid4[]::new);
 
             if (deviceId.length == 0) {
                 throw new LayoutTryLaterException("No dataservers available");
             }
 
-            if (!fs.setInodeLayout(inode, BaseEncoding.base16().lowerCase().encode(b.array()))) {
+            byte[] raw = Arrays.copyOf(b.array(), Short.BYTES*deviceId.length);
+            if (!fs.setInodeLayout(inode, BaseEncoding.base16().lowerCase().encode(raw))) {
                 // we fail, as other location is set. try again
                 return getOrBindDeviceId(inode, iomode, layoutType);
             }
@@ -424,11 +397,9 @@ public class DeviceManager implements NFSv41DeviceManager {
 
     private static class DS {
         // gRPC channel and co.
-
         private ManagedChannel channel;
         private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
         private InetSocketAddress[] addr;
-
     }
 
 }
