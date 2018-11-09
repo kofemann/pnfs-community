@@ -444,6 +444,7 @@ public class DataServer {
             FileChannel in = fsc.get(inode).getChannel();
 
             int bytesReaded = in.read(bb, offset);
+            bb.flip();
             if (bytesReaded < 0) {
                 eof = true;
             }
