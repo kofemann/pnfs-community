@@ -223,7 +223,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         layout.lo_iomode = ioMode;
         layout.lo_offset = new offset4(0);
         layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
-        layout.lo_content = layoutDriver.getLayoutContent(stateid,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
+        layout.lo_content = layoutDriver.getLayoutContent(rawOpenState,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
 
         return  new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
     }
