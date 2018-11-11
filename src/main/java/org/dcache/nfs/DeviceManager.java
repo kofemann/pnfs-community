@@ -20,6 +20,7 @@
 package org.dcache.nfs;
 
 import com.google.common.io.BaseEncoding;
+import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.dcache.nfs.v4.xdr.layout4;
@@ -49,10 +50,14 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.Caching;
+import javax.security.auth.Subject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.SetFileSizeRequest;
+import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
+import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutTryLaterException;
 import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
@@ -74,7 +79,10 @@ import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
+import org.dcache.nfs.vfs.ForwardingFileSystem;
 import org.dcache.nfs.vfs.Inode;
+import org.dcache.nfs.vfs.Stat;
+import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
 import org.dcache.oncrpc4j.util.Bytes;
@@ -86,7 +94,7 @@ import org.dcache.oncrpc4j.util.Bytes;
  *
  */
 
-public class DeviceManager implements NFSv41DeviceManager {
+public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceManager {
 
     private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
 
@@ -392,6 +400,49 @@ public class DeviceManager implements NFSv41DeviceManager {
         }
 
         return deviceId;
+    }
+
+    @Override
+    public void setattr(Inode inode, Stat stat) throws IOException {
+        if (stat.isDefined(Stat.StatAttribute.SIZE)) {
+            deviceid4[] ids = getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_NFSV4_1_FILES);
+
+            SetFileSizeRequest request = SetFileSizeRequest.newBuilder()
+                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+                    .setSize(stat.getSize())
+                    .build();
+
+            for (deviceid4 id : ids) {
+                DS ds = _deviceMap.get(id);
+                if (ds == null) {
+                    _log.warn("No such DS: {}", id);
+                    throw new DelayException("Not all data servers online");
+                }
+                SetFileSizeResponse response = ds.blockingStub.setFileSize(request);
+                nfsstat.throwIfNeeded(response.getStatus());
+            }
+        }
+        delegate().setattr(inode, stat);
+    }
+
+    @Override
+    public Inode create(Inode parent, Stat.Type type, String path, Subject subject, int mode) throws IOException {
+
+
+        Inode inode  = delegate().create(parent, type, path, subject, mode);
+
+        // bind ds to file
+        if (type == Stat.Type.REGULAR) {
+            // if file exists nothing will happen.
+            // TODO: handle different layout types.
+            getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_FLEX_FILES);
+        }
+        return inode;
+    }
+
+    @Override
+    protected VirtualFileSystem delegate() {
+        return fs;
     }
 
 

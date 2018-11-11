@@ -95,7 +95,7 @@
 
     <bean id="vfs" class="org.dcache.nfs.vfs.VfsCache">
         <description>VFS Cache</description>
-        <constructor-arg ref="vfs-intern"/>
+        <constructor-arg ref="device-manager"/>
         <constructor-arg ref="cache-config"/>
     </bean>
 
