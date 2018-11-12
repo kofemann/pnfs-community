@@ -23,6 +23,10 @@ services:
     - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
     - KAFKA_CREATE_TOPICS=iostat:1:1,ioerr:1:1
     - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181/kafka
+    - LOG4J_LOGGER_KAFKA=WARN
+    - LOG4J_LOGGER_ORG_APACHE_KAFKA=WARN
+    - LOG4J_LOGGER_ORG_APACHE_ZOOKEEPER=WARN
+
     links:
     - zk:zookeeper
     volumes:
