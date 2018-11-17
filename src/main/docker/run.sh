@@ -12,6 +12,9 @@ case $1 in
 	JAVA_ARGS=-DPNFS_DS_ADDRESS="${LOCALADDRESS}:${PORT}"
 	echo "Staring DS on ${LOCALADDRESS}:${PORT}"
   ;;
+  sh)
+  exec /bin/sh
+  ;;
   *)
   echo "Invalid option " $1
   exit 1
@@ -19,6 +22,6 @@ case $1 in
 esac
 
 cd /opt/pnfs
-/usr/bin/java -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -server \
+exec /usr/bin/java -server \
 	${JAVA_OPT} ${JAVA_ARGS} \
 	-cp "/opt/pnfs/jars/*" org.dcache.nfs.Main svc.xml
