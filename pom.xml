@@ -116,8 +116,8 @@
 
         <version.hazelcast>3.11</version.hazelcast>
         <version.curator>4.0.1</version.curator>
-        <spring-integration-kafka.version>3.0.1.RELEASE</spring-integration-kafka.version>
-        <spring-kafka.version>2.1.1.RELEASE</spring-kafka.version>
+        <spring-integration-kafka.version>3.1.0.RELEASE</spring-integration-kafka.version>
+        <spring-kafka.version>2.2.0.RELEASE</spring-kafka.version>
     </properties>
 
     <dependencies>
