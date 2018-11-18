@@ -7,7 +7,7 @@
     </description>
 
     <groupId>org.dcache</groupId>
-    <artifactId>chimera-nfs</artifactId>
+    <artifactId>pnfs-community</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>NFSv4.1/pNFS community for testing and technology preview</name>
     <packaging>jar</packaging>
