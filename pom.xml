@@ -114,7 +114,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
 
-        <version.hazelcast>3.10.4</version.hazelcast>
+        <version.hazelcast>3.11</version.hazelcast>
         <version.curator>4.0.1</version.curator>
         <spring-integration-kafka.version>3.0.1.RELEASE</spring-integration-kafka.version>
         <spring-kafka.version>2.1.1.RELEASE</spring-kafka.version>
