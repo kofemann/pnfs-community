@@ -56,10 +56,10 @@ services:
     ports:
     - "2049:2049"
     volumes:
-    - ./exports:/opt/pnfs/exports
-    - ./oncrpcsvc.xml:/opt/pnfs/svc.xml
-    - ./nfs.properties:/opt/pnfs/nfs.properties
-    - ./chimera.properties:/opt/pnfs/chimera.properties
+    - ./exports:/pnfs/etc/exports
+    - ./oncrpcsvc.xml:/pnfs/etc/svc.xml
+    - ./nfs.properties:/pnfs/etc/nfs.properties
+    - ./chimera.properties:/pnfs/etc/chimera.properties
     logging:
       driver: json-file
       options:
@@ -86,8 +86,8 @@ services:
     ports:
     - "2052"
     volumes:
-    - ./ds.xml:/opt/pnfs/svc.xml
-    - ./ds.properties:/opt/pnfs/ds.properties
+    - ./ds.xml:/pnfs/etc/svc.xml
+    - ./ds.properties:/pnfs/etc/ds.properties
     logging:
       driver: json-file
       options:

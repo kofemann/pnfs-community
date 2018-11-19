@@ -22,10 +22,6 @@ MAINTAINER dCache "https://www.dcache.org"
 COPY --from=build /java-11 /usr/java-11
 RUN ln -s  /usr/java-11/bin/java /usr/bin/java
 
-# Add JARS
-RUN mkdir -p /opt/pnfs/db
-COPY maven /opt/pnfs/jars
-
 # Run community as user 'pnfs'
 RUN groupadd pnfs && useradd -r -g pnfs pnfs
 
@@ -35,15 +31,18 @@ COPY agent-client.py /agent-client.py
 RUN chmod +x /run.sh /agent-client.py
 
 # where we store the data
-RUN mkdir /data /var/run/pnfs
+RUN mkdir -p /pnfs/data /pnfs/db /pnfs/etc  /pnfs/state
 
 # adjust permissions
-RUN chown -R pnfs:pnfs /data
-RUN chown -R pnfs:pnfs /opt/pnfs
-RUN chown -R pnfs:pnfs /var/run/pnfs
+RUN chown -R pnfs:pnfs /pnfs
+
+# Add JARS
+COPY maven /pnfs/jars
 
 # expose TCP ports for network services
 EXPOSE 2049 2052
+
+VOLUME /pnfs
 
 # run as user pnfs
 USER pnfs

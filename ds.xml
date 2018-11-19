@@ -7,7 +7,7 @@
     <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
         <property name="locations">
             <list>
-                <value>ds.properties</value>
+                <value>/pnfs/etc/ds.properties</value>
             </list>
         </property>
     </bean>

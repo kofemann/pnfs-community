@@ -21,7 +21,6 @@ case $1 in
   ;;
 esac
 
-cd /opt/pnfs
 exec /usr/bin/java -server \
 	${JAVA_OPT} ${JAVA_ARGS} \
-	-cp "/opt/pnfs/jars/*" org.dcache.nfs.Main svc.xml
+	-cp "/pnfs/jars/*" org.dcache.nfs.Main /pnfs/etc/svc.xml
