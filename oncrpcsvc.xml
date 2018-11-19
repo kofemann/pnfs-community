@@ -128,6 +128,17 @@
 
     <bean id="idmapd" class="org.dcache.nfs.v4.SimpleIdMap" />
 
+    <bean id="state-handler" class="org.dcache.nfs.v4.NFSv4StateHandler">
+        <description>NFSv4 client and state handler</description>
+        <constructor-arg index="0" value="${nfs.lease.time}"/>
+        <constructor-arg index="1" value="0"/>
+        <constructor-arg>
+            <bean class="org.dcache.nfs.v4.BerkeleyDBClientStore" destroy-method="close">
+                <constructor-arg value="${nfs.state.store}" />
+            </bean>
+        </constructor-arg>
+    </bean>
+
     <!--
        NFSv4.1 MDS
     -->
@@ -137,6 +148,7 @@
         <property name="deviceManager" ref="device-manager" />
         <property name="vfs" ref="vfs" />
         <property name="exportFile" ref="export" />
+        <property name="stateHandler" ref="state-handler"/>
     </bean>
 
     <!-- NFSv4 programm -->
