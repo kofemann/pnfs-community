@@ -2,7 +2,6 @@
 # Build (packaging) image
 #
 FROM centos:7 as build
-MAINTAINER dCache "https://www.dcache.org"
 
 # Add JRE (work around untill offcial rpm is available)
 ADD https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz /tmp
@@ -17,7 +16,6 @@ RUN tar -C /tmp -xzf /tmp/openjdk-11.0.1_linux-x64_bin.tar.gz && \
 # Final image to deploy. Uses artifacts (jlinked JRE) from the build image
 #
 FROM centos:7
-MAINTAINER dCache "https://www.dcache.org"
 
 COPY --from=build /java-11 /usr/java-11
 RUN ln -s  /usr/java-11/bin/java /usr/bin/java
