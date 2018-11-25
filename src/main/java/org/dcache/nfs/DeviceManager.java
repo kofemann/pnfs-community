@@ -31,7 +31,6 @@ import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.device_addr4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.kafka.core.KafkaTemplate;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -70,8 +69,6 @@ import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
-import org.dcache.nfs.v4.ff.ff_ioerr4;
-import org.dcache.nfs.v4.ff.ff_iostats4;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.dcache.nfs.v4.ff.flex_files_prot;
 import org.dcache.nfs.v4.xdr.layoutiomode4;
@@ -122,8 +119,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     // we use 'other' part of stateid as sequence number can change
     private Cache<byte[], byte[]> mdsStateIdCache;
 
-    private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
-    private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
+    private Consumer<ff_layoutreturn4> layoutStats;
 
     private ChimeraVfs fs;
 
@@ -139,21 +135,15 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         zkCurator = curatorFramework;
     }
 
+    public void setLayoutReturnConsumer(Consumer<ff_layoutreturn4> layoutStats) {
+        this.layoutStats = layoutStats;
+    }
+
     public void init() throws Exception {
-        final Consumer<ff_layoutreturn4> flexfilesStat = lr -> {
-
-            for (ff_iostats4 iostat : lr.fflr_iostats_report) {
-                iostatKafkaTemplate.sendDefault(iostat);
-            }
-
-            for (ff_ioerr4 ioerr : lr.fflr_ioerr_report) {
-                ioerrKafkaTemplate.sendDefault(ioerr);
-            }
-        };
 
         _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
                 flex_files_prot.FF_FLAGS_NO_IO_THRU_MDS,
-                new utf8str_mixed("17"), new utf8str_mixed("17"), flexfilesStat)
+                new utf8str_mixed("17"), new utf8str_mixed("17"), layoutStats)
         );
 
         _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
@@ -330,15 +320,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         int deviceId = Integer.parseInt(id);
         _deviceMap.remove(deviceidOf(deviceId));
     }
-
-    public void setIoStatKafkaTemplate(KafkaTemplate<Object, ff_iostats4> template) {
-        iostatKafkaTemplate = template;
-    }
-
-    public void setIoErrKafkaTemplate(KafkaTemplate<Object, ff_ioerr4> template) {
-        ioerrKafkaTemplate = template;
-    }
-
 
     /**
      * Returns an array of device ids associated with the file. If

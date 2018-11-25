@@ -52,9 +52,8 @@
     <bean id="device-manager" class="org.dcache.nfs.DeviceManager" init-method="init">
         <description>Device manager</description>
         <property name="curatorFramework" ref="zk-curator" />
-        <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
-        <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
         <property name="chimeraVfs" ref="vfs-intern"/>
+        <property name="layoutReturnConsumer" ref="layoutStats" />
     </bean>
 
     <!--
@@ -221,4 +220,9 @@
          <property name="defaultTopic" value="ioerr"/>
      </bean>
 
+     <bean name="layoutStats" class="org.dcache.nfs.KafkaLayoutReturnConsumer">
+         <description>Layout return consumer</description>
+         <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
+         <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
+     </bean>
 </beans>
