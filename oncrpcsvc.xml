@@ -18,6 +18,9 @@
                 <value>/pnfs/etc/chimera.properties</value>
             </list>
         </property>
+        <property name="environment">
+            <bean class="org.springframework.core.env.StandardEnvironment" />
+        </property>
     </bean>
 
     <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">

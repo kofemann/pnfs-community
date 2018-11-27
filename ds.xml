@@ -10,6 +10,9 @@
                 <value>/pnfs/etc/ds.properties</value>
             </list>
         </property>
+        <property name="environment">
+            <bean class="org.springframework.core.env.StandardEnvironment" />
+        </property>
     </bean>
 
     <!--
