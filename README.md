@@ -24,7 +24,7 @@ where **oncrpcsvc.xml** is spring config file to start the server.
 
 For a quick start, use provided **docker-compose.yml** file. As
 pNFS DSes have to publish their IP addresses, add an .env file
-with the IP address whicch have to be offerend to the clients:
+with the IP address which have to be offered to the clients:
 
 ```property
 # example .env file
