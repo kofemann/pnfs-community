@@ -26,7 +26,9 @@ public class Main {
 
         try (ConfigurableApplicationContext context = new FileSystemXmlApplicationContext(args[0])) {
             if (args.length > 1) {
-                context.getEnvironment().setActiveProfiles(Arrays.copyOfRange(args, 1, args.length));
+                String[] profiles = Arrays.copyOfRange(args, 1, args.length);
+                System.out.println("Activating profiles: " + Arrays.toString(profiles));
+                context.getEnvironment().setActiveProfiles(profiles);
             }
             context.getBean("oncrpcsvc");
 
