@@ -52,8 +52,7 @@
     </bean>
 
     <bean id="zk-curator-factory" class="org.dcache.nfs.zk.Curator4Spring">
-        <property name="port" value="2181" />
-        <property name="host" value="zk-host" />
+        <property name="connectString" value="${ZOOKEEPER_CONNECT}" />
     </bean>
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>

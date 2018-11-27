@@ -48,11 +48,11 @@ services:
     - zk
     environment:
     - JAVA_OPT=
+    - KAFKA_BOOTSTRAP_SERVER=kafka:9092
+    - ZOOKEEPER_CONNECT=zk:2181
     command: mds
     links:
-    - zk:zk-host
     - hz:hz-host
-    - kafka:kafka-host
     ports:
     - "2049:2049"
     volumes:
@@ -78,9 +78,9 @@ services:
     environment:
     - LOCALADDRESS=${LOCAL_ADDRESS}
     - JAVA_OPT=
+    - ZOOKEEPER_CONNECT=zk:2181
     command: ds
     links:
-    - zk:zk-host
     - hz:hz-host
     - docker-discovery:dockerhost
     ports:

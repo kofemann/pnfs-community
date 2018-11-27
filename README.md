@@ -12,6 +12,14 @@ A simple NFSv4.1/pNFS community for testing and demonstration.
 
 ## Running
 
+The pNFS community requires apache zookeeper and apache kafka to run.
+The location to the services can be configure through environment variables:
+
+```sh
+export KAFKA_BOOTSTRAP_SERVER=kafka:9092
+export ZOOKEEPER_CONNECT=zk:2181
+```
+
 ### As stand-alone
 
 ```sh

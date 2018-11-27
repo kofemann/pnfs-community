@@ -184,8 +184,7 @@
     </bean>
 
     <bean id="zk-curator-factory" class="org.dcache.nfs.zk.Curator4Spring">
-        <property name="port" value="2181" />
-        <property name="host" value="zk-host" />
+        <property name="connectString" value="${ZOOKEEPER_CONNECT}" />
     </bean>
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
@@ -196,7 +195,7 @@
              <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
                  <constructor-arg>
                      <map>
-                         <entry key="bootstrap.servers" value="kafka-host:9092"/>
+                         <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
                          <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
                          <entry key="value.serializer" value="org.dcache.nfs.IoStatSerializer" />
                      </map>
@@ -212,7 +211,7 @@
              <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
                  <constructor-arg>
                      <map>
-                         <entry key="bootstrap.servers" value="kafka-host:9092"/>
+                         <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
                          <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
                          <entry key="value.serializer" value="org.dcache.nfs.IoErrorSerializer" />
                      </map>

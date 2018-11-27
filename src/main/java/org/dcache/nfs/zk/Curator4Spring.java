@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2017 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2015 - 2018 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -26,22 +26,16 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 public class Curator4Spring {
 
-    private int port;
-    private String host;
+    private String connectionString;
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
+    public void setConnectString(String connect) {
+        connectionString = connect;
     }
 
     public CuratorFramework getCurator() {
 
         try {
             final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-            final String connectionString = host + ":" + port;
             CuratorFramework client = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
             client.start();
             return client;
