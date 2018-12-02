@@ -57,7 +57,7 @@ services:
     - "2049:2049"
     volumes:
     - ./exports:/pnfs/etc/exports
-    - ./oncrpcsvc.xml:/pnfs/etc/svc.xml
+    - ./mds.xml:/pnfs/etc/svc.xml
     - ./nfs.properties:/pnfs/etc/nfs.properties
     - ./chimera.properties:/pnfs/etc/chimera.properties
     logging:
