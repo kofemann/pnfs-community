@@ -89,7 +89,7 @@
                 <configuration>
                     <protocArtifact>com.google.protobuf:protoc:3.5.1-1:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.16.1:exe:${os.detected.classifier}</pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
                 </configuration>
                 <executions>
                     <execution>
@@ -116,6 +116,7 @@
 
         <version.hazelcast>3.11</version.hazelcast>
         <version.curator>4.0.1</version.curator>
+        <version.grpc>1.17.0</version.grpc>
         <spring-integration-kafka.version>3.1.0.RELEASE</spring-integration-kafka.version>
         <spring-kafka.version>2.2.0.RELEASE</spring-kafka.version>
     </properties>
@@ -313,17 +314,17 @@
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
-            <version>1.16.1</version>
+            <version>${version.grpc}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-            <version>1.16.1</version>
+            <version>${version.grpc}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
-            <version>1.16.1</version>
+            <version>${version.grpc}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
