@@ -2,9 +2,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <description>
-        Pure Java implementation NFSv3, v4 and v4.1
-    </description>
+    <description>NFSv4.1/pNFS community</description>
 
     <groupId>org.dcache</groupId>
     <artifactId>pnfs-community</artifactId>
