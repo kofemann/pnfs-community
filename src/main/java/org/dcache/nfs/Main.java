@@ -1,15 +1,13 @@
 package org.dcache.nfs;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import java.util.logging.LogManager;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-
 import org.springframework.beans.BeansException;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.FileSystemXmlApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Main {
 
@@ -20,18 +18,15 @@ public class Main {
         SLF4JBridgeHandler.install();
 
         if (args.length < 1) {
-            System.err.println("Usage: Main <config> [profile1.....profileN]");
+            System.err.println("Usage: Main <mode>");
             System.exit(1);
         }
 
-        try (ConfigurableApplicationContext context = new FileSystemXmlApplicationContext(args[0])) {
-            if (args.length > 1) {
-                String[] profiles = Arrays.copyOfRange(args, 1, args.length);
-                System.out.println("Activating profiles: " + Arrays.toString(profiles));
-                context.getEnvironment().setActiveProfiles(profiles);
-            }
-            context.getBean("oncrpcsvc");
+        String mode = args[0];
 
+        String config = "org/dcache/nfs/" + mode + ".xml";
+        try (ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(config)) {
+            context.getBean("oncrpcsvc");
             Thread.currentThread().join();
         } catch (InterruptedException e) {
             // shutdown

@@ -14,8 +14,8 @@
     <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
         <property name="locations">
             <list>
-                <value>/pnfs/etc/nfs.properties</value>
-                <value>/pnfs/etc/chimera.properties</value>
+                <value>file:///pnfs/etc/nfs.properties</value>
+                <value>file:///pnfs/etc/chimera.properties</value>
             </list>
         </property>
         <property name="environment">

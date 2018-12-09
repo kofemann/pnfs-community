@@ -23,4 +23,4 @@ esac
 
 exec /usr/bin/java -server \
 	${JAVA_OPT} ${JAVA_ARGS} \
-	-cp "/pnfs/jars/*" org.dcache.nfs.Main /pnfs/etc/svc.xml
+	-cp "/pnfs/jars/*" org.dcache.nfs.Main $1

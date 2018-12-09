@@ -7,7 +7,7 @@
     <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
         <property name="locations">
             <list>
-                <value>/pnfs/etc/ds.properties</value>
+                <value>file:///pnfs/etc/ds.properties</value>
             </list>
         </property>
         <property name="environment">
