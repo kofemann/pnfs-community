@@ -57,7 +57,6 @@ services:
     - "2049:2049"
     volumes:
     - ./exports:/pnfs/etc/exports
-    - ./mds.xml:/pnfs/etc/svc.xml
     - ./nfs.properties:/pnfs/etc/nfs.properties
     - ./chimera.properties:/pnfs/etc/chimera.properties
     logging:
@@ -86,7 +85,6 @@ services:
     ports:
     - "2052"
     volumes:
-    - ./ds.xml:/pnfs/etc/svc.xml
     - ./ds.properties:/pnfs/etc/ds.properties
     logging:
       driver: json-file
