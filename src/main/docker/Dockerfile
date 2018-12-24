@@ -1,24 +1,8 @@
-#
-# Build (packaging) image
-#
-FROM centos:7 as build
-
-# Add JRE (work around untill offcial rpm is available)
-ADD https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz /tmp
-# unpack the  JVM and create compack jre with jlink
-RUN tar -C /tmp -xzf /tmp/openjdk-11.0.1_linux-x64_bin.tar.gz && \
-    /tmp/jdk-11.0.1/bin/jlink --compress=2 --module-path /tmp/jdk-11.0.1/jmods \
-    --add-modules java.se,jdk.unsupported \
-    --output /java-11
-
-
-#
-# Final image to deploy. Uses artifacts (jlinked JRE) from the build image
-#
+#  Based  on CentOS-7.6
 FROM centos:7
 
-COPY --from=build /java-11 /usr/java-11
-RUN ln -s  /usr/java-11/bin/java /usr/bin/java
+# Add JRE
+RUN yum -y install java-11-openjdk-headless
 
 # Run community as user 'pnfs'
 RUN groupadd pnfs && useradd -r -g pnfs pnfs
