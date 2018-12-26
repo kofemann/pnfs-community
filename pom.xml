@@ -42,6 +42,7 @@
         <version.grpc>1.17.0</version.grpc>
         <spring-integration-kafka.version>3.1.0.RELEASE</spring-integration-kafka.version>
         <spring-kafka.version>2.2.0.RELEASE</spring-kafka.version>
+        <kafka.version>2.1.0</kafka.version>
     </properties>
 
     <build>
@@ -273,7 +274,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.12</artifactId>
-            <version>2.0.1</version>
+            <version>${kafka.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
@@ -292,7 +293,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>2.0.1</version>
+            <version>${kafka.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.zookeeper</groupId>
