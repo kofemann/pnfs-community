@@ -70,6 +70,8 @@ import org.dcache.oncrpc4j.rpc.OncRpcSvcBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.dcache.nfs.Utils.getLocalAddresses;
+
 public class DataServer {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DataServer.class);
@@ -126,7 +128,7 @@ public class DataServer {
 
         svc.start();
         bepSrv = new BackendServer(bepPort, fsc);
-        InetSocketAddress[] bep = getLocalBepAddresses(bepPort);
+        InetSocketAddress[] bep = getLocalAddresses(bepPort);
 
         long myId = ZkDataServer.getOrAllocateId(zkCurator, idFile);
         Mirror mirror = new Mirror(myId, localInetAddresses, bep);
@@ -187,25 +189,6 @@ public class DataServer {
                     .map(s -> new InetSocketAddress(s.getHost(), s.getPort()))
                     .toArray(InetSocketAddress[]::new);
         }
-    }
-
-    private InetSocketAddress[] getLocalBepAddresses(int port) throws SocketException {
-        List<InetSocketAddress> localaddresses = new ArrayList<>();
-
-        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-        while (ifaces.hasMoreElements()) {
-            NetworkInterface iface = ifaces.nextElement();
-            if (!iface.isUp() || iface.getName().startsWith("br-")) {
-                continue;
-            }
-
-            Enumeration<InetAddress> addrs = iface.getInetAddresses();
-            while (addrs.hasMoreElements()) {
-                InetAddress addr = addrs.nextElement();
-                localaddresses.add(new InetSocketAddress(addr, port));
-            }
-        }
-        return localaddresses.toArray(new InetSocketAddress[0]);
     }
 
     private final VirtualFileSystem VFS = new VirtualFileSystem() {
