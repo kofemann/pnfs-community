@@ -83,7 +83,7 @@ services:
     - hz:hz-host
     - docker-discovery:dockerhost
     ports:
-    - "2052"
+    - "2052:2052"
     volumes:
     - ./ds.properties:/pnfs/etc/ds.properties
     logging:
