@@ -8,9 +8,8 @@ case $1 in
   echo "Staring MDS"
   ;;
   ds)
-	PORT=`/agent-client.py`
-	JAVA_ARGS=-DPNFS_DS_ADDRESS="${LOCALADDRESS}:${PORT}"
-	echo "Staring DS on ${LOCALADDRESS}:${PORT}"
+  JAVA_ARGS=-DPNFS_DS_ADDRESS="${LOCALADDRESS}"
+  echo "Staring DS"
   ;;
   sh)
   exec /bin/sh

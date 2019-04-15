@@ -5,11 +5,6 @@
 version: '2.1'
 services:
 
-  docker-discovery:
-    image: dcache/docker-discovery-agent
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-
   zk:
     image: zookeeper:3.5
 
@@ -73,7 +68,6 @@ services:
     - hz
     - zk
     - mds
-    - docker-discovery
     environment:
     - LOCALADDRESS=${LOCAL_ADDRESS}
     - JAVA_OPT=
@@ -81,7 +75,6 @@ services:
     command: ds
     links:
     - hz:hz-host
-    - docker-discovery:dockerhost
     ports:
     - "2052:2052"
     volumes:

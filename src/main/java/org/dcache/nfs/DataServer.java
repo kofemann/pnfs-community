@@ -2,13 +2,11 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -16,10 +14,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -77,6 +72,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.dcache.nfs.Utils.getLocalAddresses;
 
 public class DataServer {
 
@@ -118,7 +114,7 @@ public class DataServer {
     }
 
     public void init() throws Exception {
-        localInetAddresses = getLocalAddresses(port);
+        localInetAddresses = getLocalOrConfiguredAddresses(port);
 
         nfs = new NFSServerV41.Builder()
                 .withOperationFactory(new EDSNFSv4OperationFactory())
@@ -164,35 +160,21 @@ public class DataServer {
         zkCurator.delete().forPath(zkNode);
     }
 
-    private InetSocketAddress[] getLocalAddresses(int port) throws SocketException {
-        List<InetSocketAddress> localaddresses = new ArrayList<>();
+    private InetSocketAddress[] getLocalOrConfiguredAddresses(int port) throws SocketException {
 
         // check for explicit address before discovery
         String suppliedAddress = System.getProperty(PNFS_DS_ADDRESS);
 
         if (Strings.isNullOrEmpty(suppliedAddress)) {
-            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-            while (ifaces.hasMoreElements()) {
-                NetworkInterface iface = ifaces.nextElement();
-                if (!iface.isUp() || iface.getName().startsWith("br-")) {
-                    continue;
-                }
-
-                Enumeration<InetAddress> addrs = iface.getInetAddresses();
-                while (addrs.hasMoreElements()) {
-                    InetAddress addr = addrs.nextElement();
-                    localaddresses.add(new InetSocketAddress(addr, port));
-                }
-            }
-            return localaddresses.toArray(new InetSocketAddress[0]);
+            return getLocalAddresses(port);
         } else {
             return Splitter.on(',')
                     .trimResults()
                     .omitEmptyStrings()
                     .splitToList(suppliedAddress)
                     .stream()
-                    .map(HostAndPort::fromString)
-                    .map(s -> new InetSocketAddress(s.getHost(), s.getPort()))
+                    .map(InetAddresses::forUriString)
+                    .map(a -> new InetSocketAddress(a, port))
                     .toArray(InetSocketAddress[]::new);
         }
     }
