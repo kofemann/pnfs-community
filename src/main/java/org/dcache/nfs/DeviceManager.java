@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2018 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2019 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -19,7 +19,7 @@
  */
 package org.dcache.nfs;
 
-import com.google.common.io.BaseEncoding;
+import com.google.common.base.Splitter;
 import com.google.protobuf.ByteString;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -35,8 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -44,8 +42,10 @@ import org.dcache.nfs.status.NoEntException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -58,7 +58,6 @@ import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
 import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutTryLaterException;
-import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
@@ -289,11 +288,19 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         return _supportedDrivers.keySet();
     }
 
-    private static deviceid4 deviceidOf(long id) {
+    private static deviceid4 deviceidOf(UUID id) {
         byte[] deviceidBytes = new byte[nfs4_prot.NFS4_DEVICEID4_SIZE];
-        Bytes.putLong(deviceidBytes, 0, id);
+        Bytes.putLong(deviceidBytes, 0, id.getMostSignificantBits());
+        Bytes.putLong(deviceidBytes, 8, id.getLeastSignificantBits());
 
         return new deviceid4(deviceidBytes);
+    }
+
+    private static UUID uuidOf(deviceid4 id) {
+        long high = Bytes.getLong(id.value, 0);
+        long low = Bytes.getLong(id.value, 8);
+
+        return new UUID(high, low);
     }
 
     private void addDS(String node) throws Exception {
@@ -317,7 +324,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     private void removeDS(String node) throws Exception {
         String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
-        int deviceId = Integer.parseInt(id);
+        UUID deviceId = UUID.fromString(id);
         _deviceMap.remove(deviceidOf(deviceId));
     }
 
@@ -337,19 +344,12 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         String combinedLocation = fs.getInodeLayout(inode);
         if (combinedLocation != null) {
 
-            byte[] raw = BaseEncoding.base16().lowerCase().decode(combinedLocation);
-            if ((raw.length == 0) || (raw.length % Short.BYTES != 0)) {
-                throw new ServerFaultException("invalid location size");
-            }
-
-            ByteBuffer b = ByteBuffer
-                .wrap(raw)
-                .order(ByteOrder.BIG_ENDIAN);
-
-            deviceId = new deviceid4[raw.length / Short.BYTES];
-            for (int i = 0; i < deviceId.length; i++) {
-                deviceId[i] = deviceidOf(b.getShort(i));
-            }
+            deviceId = Splitter.on(':')
+                    .splitToList(combinedLocation)
+                    .stream()
+                    .map(UUID::fromString)
+                    .map(DeviceManager::deviceidOf)
+                    .toArray(deviceid4[]::new);
 
         } else {
 
@@ -359,22 +359,22 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             }
 
             int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
-            ByteBuffer b = ByteBuffer
-                .allocate(Short.BYTES * mirrors)
-                .order(ByteOrder.BIG_ENDIAN);
-
             deviceId = _deviceMap.keySet().stream()
                     .unordered()
                     .limit(mirrors)
-                    .peek(d -> b.putShort((short)Bytes.getLong(d.value, 0)))
                     .toArray(deviceid4[]::new);
 
             if (deviceId.length == 0) {
                 throw new LayoutTryLaterException("No dataservers available");
             }
 
-            byte[] raw = Arrays.copyOf(b.array(), Short.BYTES*deviceId.length);
-            if (!fs.setInodeLayout(inode, BaseEncoding.base16().lowerCase().encode(raw))) {
+            combinedLocation = Arrays.asList(deviceId)
+                    .stream()
+                    .map(DeviceManager::uuidOf)
+                    .map(Object::toString)
+                    .collect(Collectors.joining(":"));
+
+            if (!fs.setInodeLayout(inode, combinedLocation)) {
                 // we fail, as other location is set. try again
                 return getOrBindDeviceId(inode, iomode, layoutType);
             }

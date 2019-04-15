@@ -3,6 +3,7 @@ package org.dcache.nfs;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.net.HostAndPort;
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
@@ -11,10 +12,15 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.Caching;
 import javax.security.auth.Subject;
@@ -70,7 +76,7 @@ import org.dcache.oncrpc4j.rpc.OncRpcSvcBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.dcache.nfs.Utils.getLocalAddresses;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public class DataServer {
 
@@ -130,7 +136,7 @@ public class DataServer {
         bepSrv = new BackendServer(bepPort, fsc);
         InetSocketAddress[] bep = getLocalAddresses(bepPort);
 
-        long myId = ZkDataServer.getOrAllocateId(zkCurator, idFile);
+        UUID myId = getOrAllocateId(idFile);
         Mirror mirror = new Mirror(myId, localInetAddresses, bep);
         zkNode = zkCurator.create()
                 .creatingParentContainersIfNeeded()
@@ -460,4 +466,24 @@ public class DataServer {
             res.resok4.writeverf = context.getRebootVerifier();
         }
     }
+
+
+    public static UUID getOrAllocateId(String idFile) throws IOException {
+
+        Path p = new File(idFile).toPath();
+
+        if (Files.isRegularFile(p)) {
+            byte[] b = Files.readAllBytes(p);
+            return UUID.fromString(new String(b, US_ASCII));
+        } else if (Files.exists(p)) {
+            throw new FileAlreadyExistsException("Path existis and not a regular file");
+        }
+
+        UUID id = UUID.randomUUID();
+        Files.write(p, id.toString().getBytes(US_ASCII),
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
+        return id;
+    }
+
 }
