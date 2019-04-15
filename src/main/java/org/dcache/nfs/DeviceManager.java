@@ -81,7 +81,9 @@ import org.dcache.nfs.vfs.Stat;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
-import org.dcache.oncrpc4j.util.Bytes;
+
+import static org.dcache.nfs.Utils.deviceidOf;
+import static org.dcache.nfs.Utils.uuidOf;
 
 /**
  *
@@ -288,21 +290,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         return _supportedDrivers.keySet();
     }
 
-    private static deviceid4 deviceidOf(UUID id) {
-        byte[] deviceidBytes = new byte[nfs4_prot.NFS4_DEVICEID4_SIZE];
-        Bytes.putLong(deviceidBytes, 0, id.getMostSignificantBits());
-        Bytes.putLong(deviceidBytes, 8, id.getLeastSignificantBits());
-
-        return new deviceid4(deviceidBytes);
-    }
-
-    private static UUID uuidOf(deviceid4 id) {
-        long high = Bytes.getLong(id.value, 0);
-        long low = Bytes.getLong(id.value, 8);
-
-        return new UUID(high, low);
-    }
-
     private void addDS(String node) throws Exception {
         byte[] data = zkCurator.getData().forPath(node);
         Mirror mirror = ZkDataServer.stringToString(data);
@@ -348,7 +335,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                     .splitToList(combinedLocation)
                     .stream()
                     .map(UUID::fromString)
-                    .map(DeviceManager::deviceidOf)
+                    .map(Utils::deviceidOf)
                     .toArray(deviceid4[]::new);
 
         } else {
@@ -370,7 +357,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
             combinedLocation = Arrays.asList(deviceId)
                     .stream()
-                    .map(DeviceManager::uuidOf)
+                    .map(Utils::uuidOf)
                     .map(Object::toString)
                     .collect(Collectors.joining(":"));
 
