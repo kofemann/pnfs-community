@@ -251,12 +251,6 @@
             <artifactId>hazelcast-spring</artifactId>
             <version>${version.hazelcast}</version>
         </dependency>
-        <dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>1.1.0</version>
-        </dependency>
-
 
         <!-- spring-integration -->
         <dependency>
