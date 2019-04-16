@@ -3,6 +3,8 @@ package org.dcache.nfs;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.net.InetAddresses;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -16,8 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.UUID;
-import javax.cache.Cache;
-import javax.cache.Caching;
 import javax.security.auth.Subject;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -91,10 +91,15 @@ public class DataServer {
     private String idFile;
 
     // we use 'other' part of stateid as sequence number can change
-    private Cache<byte[], byte[]> mdsStateIdCache;
+    private IMap<byte[], byte[]> mdsStateIdCache;
 
+    private HazelcastInstance hz;
 
     private BackendServer bepSrv;
+
+    public void setHazelcastClient(HazelcastInstance hz) {
+        this.hz = hz;
+    }
 
     /**
      * Set TCP port number used by data server.
@@ -139,10 +144,7 @@ public class DataServer {
                 .withMode(CreateMode.EPHEMERAL)
                 .forPath(ZKPaths.makePath(Paths.ZK_PATH, Paths.ZK_PATH_NODE + myId), ZkDataServer.toBytes(mirror));
 
-        mdsStateIdCache = Caching
-                .getCachingProvider()
-                .getCacheManager()
-                .getCache("open-stateid", byte[].class, byte[].class);
+        mdsStateIdCache = hz.getMap("open-stateid");
 
     }
 

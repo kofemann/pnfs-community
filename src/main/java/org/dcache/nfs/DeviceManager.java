@@ -21,6 +21,8 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import com.google.protobuf.ByteString;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.dcache.nfs.v4.xdr.layout4;
@@ -47,8 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.cache.Cache;
-import javax.cache.Caching;
 import javax.security.auth.Subject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -83,7 +83,6 @@ import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
 
 import static org.dcache.nfs.Utils.deviceidOf;
-import static org.dcache.nfs.Utils.uuidOf;
 
 /**
  *
@@ -118,7 +117,9 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     private final Map<layouttype4, LayoutDriver> _supportedDrivers;
 
     // we use 'other' part of stateid as sequence number can change
-    private Cache<byte[], byte[]> mdsStateIdCache;
+    private IMap<byte[], byte[]> mdsStateIdCache;
+
+    private HazelcastInstance hz;
 
     private Consumer<ff_layoutreturn4> layoutStats;
 
@@ -126,6 +127,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
+    }
+
+    public void setHazelcastClient(HazelcastInstance hz) {
+        this.hz = hz;
     }
 
     public void setChimeraVfs(ChimeraVfs fs) {
@@ -149,10 +154,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
         _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
 
-        mdsStateIdCache = Caching
-                .getCachingProvider()
-                .getCacheManager()
-                .getCache("open-stateid", byte[].class, byte[].class);
+        mdsStateIdCache = hz.getMap("open-stateid");
 
         dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
         dsNodeCache.getListenable().addListener((c, e) -> {

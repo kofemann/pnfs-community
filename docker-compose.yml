@@ -45,9 +45,8 @@ services:
     - JAVA_OPT=
     - KAFKA_BOOTSTRAP_SERVER=kafka:9092
     - ZOOKEEPER_CONNECT=zk:2181
+    - HAZELCAST_HOST=hz
     command: mds
-    links:
-    - hz:hz-host
     ports:
     - "2049:2049"
     volumes:
@@ -72,9 +71,8 @@ services:
     - LOCALADDRESS=${LOCAL_ADDRESS}
     - JAVA_OPT=
     - ZOOKEEPER_CONNECT=zk:2181
+    - HAZELCAST_HOST=hz
     command: ds
-    links:
-    - hz:hz-host
     ports:
     - "2052:2052"
     volumes:
