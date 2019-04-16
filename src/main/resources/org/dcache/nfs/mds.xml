@@ -259,7 +259,7 @@
              </bean>
          </constructor-arg>
          <constructor-arg name="autoFlush" value="false" />
-         <property name="defaultTopic" value="iostat"/>
+         <property name="defaultTopic" value="${KAFKA_IOSTAT_TOPIC}"/>
      </bean>
 
     <bean id="ioerr-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
@@ -275,7 +275,7 @@
              </bean>
          </constructor-arg>
          <constructor-arg name="autoFlush" value="false" />
-         <property name="defaultTopic" value="ioerr"/>
+         <property name="defaultTopic" value="${KAFKA_IOERR_TOPIC}"/>
      </bean>
 
      <bean name="layoutStats" class="org.dcache.nfs.KafkaLayoutReturnConsumer">

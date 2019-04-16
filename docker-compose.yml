@@ -41,6 +41,8 @@ services:
     environment:
     - JAVA_OPT=
     - KAFKA_BOOTSTRAP_SERVER=kafka:9092
+    - KAFKA_IOSTAT_TOPIC=iostat
+    - KAFKA_IOERR_TOPIC=ioerr
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
     command: mds
