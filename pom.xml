@@ -13,8 +13,8 @@
     <url>http://www.dCache.ORG</url>
 
     <scm>
-        <connection>scm:git:https://github.com/kofemann/chimera-nfs.git</connection>
-        <developerConnection>scm:git:https://github.com/kofemann/chimera-nfs.git</developerConnection>
+        <connection>scm:git:https://github.com/kofemann/pnfs-community.git</connection>
+        <developerConnection>scm:git:https://github.com/kofemann/pnfs-community.git</developerConnection>
     </scm>
 
     <!--
