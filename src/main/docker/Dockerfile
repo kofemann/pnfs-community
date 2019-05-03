@@ -9,8 +9,7 @@ RUN groupadd pnfs && useradd -r -g pnfs pnfs
 
 # add external files into container at the build time
 COPY run.sh /run.sh
-COPY agent-client.py /agent-client.py
-RUN chmod +x /run.sh /agent-client.py
+RUN chmod +x /run.sh
 
 # where we store the data
 RUN mkdir -p /pnfs/data /pnfs/db /pnfs/etc  /pnfs/state
