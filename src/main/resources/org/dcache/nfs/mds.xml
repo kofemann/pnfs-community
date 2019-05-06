@@ -216,6 +216,14 @@
         <constructor-arg index="1" value="4" />
     </bean>
 
+
+    <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
+        <description>SSL Context factory</description>
+        <property name="certFilePath" value="/hostcert.pem"/>
+        <property name="keyFilePath" value="/hostkey.pem"/>
+        <property name="trustedCaBundle" value="/ca-chain.pem"/>
+    </bean>
+
     <!--
         ONC RPC service
     -->
@@ -226,6 +234,8 @@
         <property name="autoPublish" value="false"/>
         <property name="enableJmx" value="true"/>
         <property name="useWorkerPool" value="true"/>
+        <property name="sslContext" ref="ssl-context-builder" />
+        <property name="enableStartTLS" value="true" />
     </bean>
 
     <bean id="oncrpcsvc" class="org.dcache.oncrpc4j.rpc.OncRpcSvc"

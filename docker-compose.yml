@@ -70,6 +70,9 @@ services:
     - ./exports:/pnfs/etc/exports
     - ./nfs.properties:/pnfs/etc/nfs.properties
     - ./chimera.properties:/pnfs/etc/chimera.properties
+    - ./hostkey.pem:/hostkey.pem
+    - ./hostcert.pem:/hostcert.pem
+    - ./ca-chain.pem:/ca-chain.pem
     logging:
       driver: json-file
       options:
@@ -94,6 +97,9 @@ services:
     - "2052:2052"
     volumes:
     - ./ds.properties:/pnfs/etc/ds.properties
+    - ./hostkey.pem:/hostkey.pem
+    - ./hostcert.pem:/hostcert.pem
+    - ./ca-chain.pem:/ca-chain.pem
     logging:
       driver: json-file
       options:

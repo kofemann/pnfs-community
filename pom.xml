@@ -47,6 +47,8 @@
         <spring-kafka.version>2.2.0.RELEASE</spring-kafka.version>
         <kafka.version>2.2.0</kafka.version>
         <slf4j.version>1.7.26</slf4j.version>
+        <canl.version>2.6.0</canl.version>
+        <spring-context.version>5.1.0.RELEASE</spring-context.version>
     </properties>
 
     <build>
@@ -190,7 +192,7 @@
         <dependency>
             <groupId>org.dcache</groupId>
             <artifactId>oncrpc4j-spring</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -340,6 +342,25 @@
             <artifactId>netty-tcnative-boringssl-static</artifactId>
             <version>2.0.23.Final</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.dcache</groupId>
+            <artifactId>oncrpc4j-core</artifactId>
+            <version>3.1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring-context.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>eu.eu-emi.security</groupId>
+            <artifactId>canl</artifactId>
+            <version>${canl.version}</version>
+        </dependency>
+
     </dependencies>
 
     <!--
