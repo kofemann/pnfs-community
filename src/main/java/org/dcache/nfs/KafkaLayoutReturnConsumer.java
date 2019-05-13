@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2018 - 2019 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -19,16 +19,17 @@
  */
 package org.dcache.nfs;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.ff.ff_ioerr4;
 import org.dcache.nfs.v4.ff.ff_iostats4;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.springframework.kafka.core.KafkaTemplate;
 
 /**
- * A {@link Consumer} that sends layout information to Apache Kafka.
+ * A {@link BiConsumer} that sends layout information to Apache Kafka.
  */
-public class KafkaLayoutReturnConsumer implements Consumer<ff_layoutreturn4>{
+public class KafkaLayoutReturnConsumer implements BiConsumer<CompoundContext, ff_layoutreturn4>{
 
 
     private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
@@ -44,7 +45,7 @@ public class KafkaLayoutReturnConsumer implements Consumer<ff_layoutreturn4>{
     }
 
     @Override
-    public void accept(ff_layoutreturn4 lr ) {
+    public void accept(CompoundContext context, ff_layoutreturn4 lr) {
 
         for (ff_iostats4 iostat : lr.fflr_iostats_report) {
             iostatKafkaTemplate.sendDefault(iostat);

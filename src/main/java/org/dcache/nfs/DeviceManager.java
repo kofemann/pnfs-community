@@ -46,7 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.security.auth.Subject;
@@ -121,7 +121,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     private HazelcastInstance hz;
 
-    private Consumer<ff_layoutreturn4> layoutStats;
+    private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
 
     private ChimeraVfs fs;
 
@@ -141,7 +141,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         zkCurator = curatorFramework;
     }
 
-    public void setLayoutReturnConsumer(Consumer<ff_layoutreturn4> layoutStats) {
+    public void setLayoutReturnConsumer(BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats) {
         this.layoutStats = layoutStats;
     }
 
@@ -271,7 +271,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         final NFS4Client client = context.getSession().getClient();
         final NFS4State layoutState = client.state(stateid);
         _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
-        getLayoutDriver(layoutType).acceptLayoutReturnData(body);
+        getLayoutDriver(layoutType).acceptLayoutReturnData(context, body);
     }
 
     private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
