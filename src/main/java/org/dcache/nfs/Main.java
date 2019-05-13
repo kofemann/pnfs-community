@@ -1,15 +1,19 @@
 package org.dcache.nfs;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import java.util.logging.LogManager;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.springframework.beans.BeansException;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.support.GenericApplicationContext;
 
 public class Main {
+
+
+    private static final String OPTION_PREFIX = "--with-";
 
     public static void main(String[] args) throws IOException {
 
@@ -18,14 +22,26 @@ public class Main {
         SLF4JBridgeHandler.install();
 
         if (args.length < 1) {
-            System.err.println("Usage: Main <mode>");
+            System.err.println("Usage: Main <mode> [--with-<profile1>]...[--with-<profile>N]");
             System.exit(1);
         }
 
         String mode = args[0];
 
+        String[] profiles = Arrays.asList(args)
+                .stream()
+                .filter(s -> s.startsWith(OPTION_PREFIX))
+                .map(s -> s.substring(OPTION_PREFIX.length()))
+                .toArray(String[]::new);
+
         String config = "org/dcache/nfs/" + mode + ".xml";
-        try (ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(config)) {
+        try (GenericApplicationContext context = new GenericApplicationContext()) {
+
+            XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(context);
+            context.getEnvironment().setActiveProfiles(profiles);
+            xmlReader.loadBeanDefinitions(config);
+            context.refresh();
+
             context.getBean("oncrpcsvc");
             Thread.currentThread().join();
         } catch (InterruptedException e) {
