@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.security.auth.Subject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
@@ -393,21 +392,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             }
         }
         delegate().setattr(inode, stat);
-    }
-
-    @Override
-    public Inode create(Inode parent, Stat.Type type, String path, Subject subject, int mode) throws IOException {
-
-
-        Inode inode  = delegate().create(parent, type, path, subject, mode);
-
-        // bind ds to file
-        if (type == Stat.Type.REGULAR) {
-            // if file exists nothing will happen.
-            // TODO: handle different layout types.
-            getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_FLEX_FILES);
-        }
-        return inode;
     }
 
     @Override
