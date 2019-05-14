@@ -40,7 +40,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 
-        <version.hazelcast>3.11.2</version.hazelcast>
+        <version.hazelcast>3.12</version.hazelcast>
         <version.curator>4.2.0</version.curator>
         <version.grpc>1.19.0</version.grpc>
         <spring-integration-kafka.version>3.1.0.RELEASE</spring-integration-kafka.version>
