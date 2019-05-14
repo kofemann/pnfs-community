@@ -59,6 +59,24 @@ layout stats processing and hazelcast cache for MDS<->DS state validation.
 to start **N** data servers. NOTICE: if number of data servers more than one (1)
 and flexfiles layout is used then MDS will offer to write into two (2) DSes (mirroring).
 
+#### Layout statistics
+
+To publish flexfile layout statistics into apache-kafka topic the `mds` must know kafka broker
+endpoint and topics to which to publish layouts IO statistics and error reports:
+
+```yaml
+  mds:
+    image: dcache/pnfs-community
+    depends_on:
+    - hz
+    - zk
+    environment:
+    - KAFKA_BOOTSTRAP_SERVER=kafka:9092
+    - KAFKA_IOSTAT_TOPIC=iostat
+    - KAFKA_IOERR_TOPIC=ioerr
+    command: mds --with-layoutstats
+```
+
 ## License
 
 LGPL v2 or newer

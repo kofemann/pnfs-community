@@ -33,6 +33,7 @@ import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.device_addr4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -120,6 +121,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     private HazelcastInstance hz;
 
+    @Autowired(required = false)
     private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
 
     private ChimeraVfs fs;

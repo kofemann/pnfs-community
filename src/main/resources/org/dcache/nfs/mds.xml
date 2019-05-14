@@ -110,7 +110,7 @@
         <description>Device manager</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="chimeraVfs" ref="vfs-intern"/>
-        <property name="layoutReturnConsumer" ref="layoutStats" />
+        <!-- <property name="layoutReturnConsumer" ref="layoutStats" /> autowired in profile layoutstats -->
         <property name="hazelcastClient" ref="hz-client" />
     </bean>
 
@@ -255,42 +255,44 @@
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
 
+    <beans profile="layoutstats">
+        <bean id="iostat-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
+             <constructor-arg>
+                 <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+                     <constructor-arg>
+                         <map>
+                             <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
+                             <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
+                             <entry key="value.serializer" value="org.dcache.nfs.IoStatSerializer" />
+                         </map>
+                     </constructor-arg>
+                 </bean>
+             </constructor-arg>
+             <constructor-arg name="autoFlush" value="false" />
+             <property name="defaultTopic" value="${KAFKA_IOSTAT_TOPIC}"/>
+         </bean>
 
-    <bean id="iostat-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
-         <constructor-arg>
-             <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
-                 <constructor-arg>
-                     <map>
-                         <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
-                         <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
-                         <entry key="value.serializer" value="org.dcache.nfs.IoStatSerializer" />
-                     </map>
-                 </constructor-arg>
-             </bean>
-         </constructor-arg>
-         <constructor-arg name="autoFlush" value="false" />
-         <property name="defaultTopic" value="${KAFKA_IOSTAT_TOPIC}"/>
-     </bean>
+        <bean id="ioerr-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
+             <constructor-arg>
+                 <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+                     <constructor-arg>
+                         <map>
+                             <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
+                             <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
+                             <entry key="value.serializer" value="org.dcache.nfs.IoErrorSerializer" />
+                         </map>
+                     </constructor-arg>
+                 </bean>
+             </constructor-arg>
+             <constructor-arg name="autoFlush" value="false" />
+             <property name="defaultTopic" value="${KAFKA_IOERR_TOPIC}"/>
+         </bean>
 
-    <bean id="ioerr-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
-         <constructor-arg>
-             <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
-                 <constructor-arg>
-                     <map>
-                         <entry key="bootstrap.servers" value="${KAFKA_BOOTSTRAP_SERVER}"/>
-                         <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer" />
-                         <entry key="value.serializer" value="org.dcache.nfs.IoErrorSerializer" />
-                     </map>
-                 </constructor-arg>
-             </bean>
-         </constructor-arg>
-         <constructor-arg name="autoFlush" value="false" />
-         <property name="defaultTopic" value="${KAFKA_IOERR_TOPIC}"/>
-     </bean>
+         <bean name="layoutStats" class="org.dcache.nfs.KafkaLayoutReturnConsumer">
+             <description>Layout return consumer</description>
+             <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
+             <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
+         </bean>
+     </beans>
 
-     <bean name="layoutStats" class="org.dcache.nfs.KafkaLayoutReturnConsumer">
-         <description>Layout return consumer</description>
-         <property name="ioErrKafkaTemplate" ref="ioerr-kafka-template" />
-         <property name="ioStatKafkaTemplate" ref="iostat-kafka-template" />
-     </bean>
 </beans>
