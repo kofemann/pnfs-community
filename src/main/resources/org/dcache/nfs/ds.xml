@@ -75,17 +75,72 @@
     </bean>
 
     <!--
+        NFSv4.1 Operation factory
+    -->
+    <bean id="ds-factory" class="org.dcache.nfs.EDSNFSv4OperationFactory">
+        <description>DS operation factory</description>
+        <constructor-arg ref="open-stateid" />
+        <constructor-arg ref="ds-data-pool" />
+    </bean>
+
+    <!--
+       NFSv4.1 DS
+    -->
+    <bean id="ds" class="org.dcache.nfs.v4.NFSServerV41Factory">
+        <description>NFSv4.1 MDS server</description>
+        <property name="operationFactory" ref="ds-factory"/>
+    </bean>
+
+    <!-- NFSv4 programm -->
+    <bean id="nfsv4-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">
+        <description>NFSv4.1 programm number</description>
+        <constructor-arg index="0" value="100003" />
+        <constructor-arg index="1" value="4" />
+    </bean>
+
+    <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
+        <description>SSL Context factory</description>
+        <property name="certFilePath" value="/hostcert.pem"/>
+        <property name="keyFilePath" value="/hostkey.pem"/>
+        <property name="trustedCaBundle" value="/ca-chain.pem"/>
+    </bean>
+
+    <!--
+        ONC RPC service
+    -->
+    <bean id="oncrpcsvc-builder" class="org.dcache.oncrpc4j.spring.OncRpcSvcFactoryBean">
+        <description>Onc RPC service builder for MDS</description>
+        <property name="port" value="${port}"/>
+        <property name="useTCP" value="true"/>
+        <property name="autoPublish" value="false"/>
+        <property name="enableJmx" value="true"/>
+        <property name="useWorkerPool" value="true"/>
+        <property name="sslContext" ref="ssl-context-builder" />
+        <property name="enableStartTLS" value="true" />
+    </bean>
+
+    <bean id="oncrpcsvc" class="org.dcache.oncrpc4j.rpc.OncRpcSvc"
+          init-method="start" destroy-method="stop" depends-on="data-server">
+        <description>Onc RPC service for MDS</description>
+        <constructor-arg ref="oncrpcsvc-builder"/>
+        <property name="programs">
+            <map>
+                <entry key-ref="nfsv4-programm" value-ref="ds"/>
+            </map>
+        </property>
+    </bean>
+
+    <!--
         NFSv4.1 pNFS Data Server manager
     -->
-    <bean id="oncrpcsvc" class="org.dcache.nfs.DataServer" init-method="init"
+    <bean id="data-server" class="org.dcache.nfs.DataServer" init-method="init"
           destroy-method="destroy">
         <description>Data Server</description>
-        <property name="port" value="${port}" />
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioChannelCache" ref="ds-data-pool" />
+        <property name="port" value="${port}" />
         <property name="idFile" value="${idfile}" />
         <property name="bepPort" value="${bepPort}" />
-        <property name="hazelcastClient" ref="hz-client" />
     </bean>
 
     <bean id="zk-curator-factory" class="org.dcache.nfs.zk.Curator4Spring">
@@ -93,5 +148,15 @@
     </bean>
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
+
+    <beans profile="krb5">
+        <bean id="rpc-login-service" class="org.dcache.nfs.RpcGssLogin"/>
+
+        <bean id="gss-manager" class="org.dcache.oncrpc4j.rpc.gss.GssSessionManager">
+            <constructor-arg index="0" ref="rpc-login-service" />
+            <constructor-arg index="1" value="${KRB5_SVC_PRINCIPAL}" />
+            <constructor-arg index="2" value="/pnfs/etc/krb5.keytab" />
+        </bean>
+    </beans>
 
 </beans>
