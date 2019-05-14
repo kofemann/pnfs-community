@@ -25,7 +25,7 @@ public class RpcGssLogin implements RpcLoginService {
         try {
             s.getPrincipals().add(new KerberosPrincipal(gssContext.getSrcName().toString()));
         } catch (GSSException e) {
-            LOGGER.warn("Failed to get source pringipal: ", e.getMessage());
+            LOGGER.warn("Failed to get source principal: ", e.getMessage());
         }
         return s;
     }
