@@ -5,8 +5,6 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import org.dcache.nfs.bep.FileAttributeServiceGrpc;
-import org.dcache.nfs.bep.GetFileSizeRequest;
-import org.dcache.nfs.bep.GetFileSizeResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.vfs.Inode;
@@ -50,29 +48,5 @@ public class BackendServer {
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }
-
-        @Override
-        public void getFileSize(GetFileSizeRequest request, StreamObserver<GetFileSizeResponse> responseObserver) {
-
-            byte[] fh = request.getFh().toByteArray();
-            int status = nfsstat.NFS_OK;
-            long size = 0;
-
-            try {
-                size = fs.get(new Inode(fh)).length();
-            } catch (IOException e) {
-                status = nfsstat.NFSERR_IO;
-            }
-
-            GetFileSizeResponse reply = GetFileSizeResponse.newBuilder()
-                    .setStatus(status)
-                    .setSize(size)
-                    .build();
-
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-
-        }
     }
-
 }
