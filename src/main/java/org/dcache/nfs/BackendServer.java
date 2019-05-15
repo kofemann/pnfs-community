@@ -4,7 +4,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.DataServerBepServiceGrpc;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.vfs.Inode;
@@ -21,7 +21,7 @@ public class BackendServer {
         this.fs = fs;
         server = ServerBuilder
                 .forPort(port)
-                .addService(new FileAttributeService())
+                .addService(new DataServerBepService())
                 .build();
         server.start();
     }
@@ -30,7 +30,7 @@ public class BackendServer {
         server.shutdown();
     }
 
-    private class FileAttributeService extends FileAttributeServiceGrpc.FileAttributeServiceImplBase {
+    private class DataServerBepService extends DataServerBepServiceGrpc.DataServerBepServiceImplBase {
 
         @Override
         public void setFileSize(SetFileSizeRequest request, StreamObserver<SetFileSizeResponse> responseObserver) {

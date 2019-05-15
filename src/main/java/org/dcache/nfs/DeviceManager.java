@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.dcache.nfs.bep.FileAttributeServiceGrpc;
+import org.dcache.nfs.bep.DataServerBepServiceGrpc;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
@@ -305,7 +305,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                 .usePlaintext() // disable SSL
                 .build();
 
-        ds.blockingStub = FileAttributeServiceGrpc
+        ds.blockingStub = DataServerBepServiceGrpc
                 .newBlockingStub(ds.channel);
 
 
@@ -405,7 +405,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     private static class DS {
         // gRPC channel and co.
         private ManagedChannel channel;
-        private FileAttributeServiceGrpc.FileAttributeServiceBlockingStub blockingStub;
+        private DataServerBepServiceGrpc.DataServerBepServiceBlockingStub blockingStub;
         private InetSocketAddress[] addr;
     }
 

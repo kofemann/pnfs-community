@@ -7,7 +7,7 @@ option objc_class_prefix = "BEP";
 
 package pnfs;
 
-service FileAttributeService {
+service DataServerBepService {
     rpc SetFileSize (SetFileSizeRequest) returns (SetFileSizeResponse) {}
 }
 
