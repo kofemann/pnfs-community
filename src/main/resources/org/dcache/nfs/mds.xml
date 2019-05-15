@@ -26,34 +26,7 @@
         </property>
     </bean>
 
-
-
-    <hz:client id="hz-client">
-
-        <hz:group name="pnfs-community"/>
-
-        <hz:properties>
-            <hz:property name="hazelcast.logging.type">slf4j</hz:property>
-            <hz:property name="hazelcast.discovery.enabled">false</hz:property>
-            <hz:property name="hazelcast.phone.home.enabled">false</hz:property>
-        </hz:properties>
-
-        <hz:network connection-attempt-limit="3"
-                     connection-attempt-period="30000" connection-timeout="1000"
-                     redo-operation="false" smart-routing="false">
-            <hz:member>hz</hz:member>
-        </hz:network>
-
-        <hz:near-cache name="open-stateid"
-                        cache-local-entries="false"
-                        eviction-policy="LFU"
-                        in-memory-format="BINARY"
-                        invalidate-on-change="true"
-                        max-idle-seconds="0"
-                        time-to-live-seconds="90" />
-    </hz:client>
-
-    <hz:map id="open-stateid" name="open-stateid" instance-ref="hz-client" />
+    <import resource="community-common.xml"/>
 
     <hz:hazelcast id="hazelcastInstance">
 
@@ -91,18 +64,6 @@
         </constructor-arg>
     </bean>
 
-    <!--
-        Convert protperies with multiple values separated by comma into an array of strings:
-        key=value1,value2,value3 : String[] {value1, value2, value3}
-    -->
-    <bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
-        <property name="customEditors">
-            <map>
-                <entry key="java.lang.String[]"
-                       value="org.springframework.beans.propertyeditors.StringArrayPropertyEditor" />
-            </map>
-        </property>
-    </bean>
     <!--
         NFSv4.1 pNFS Data Server manager
     -->
@@ -209,21 +170,6 @@
         <property name="stateHandler" ref="state-handler"/>
     </bean>
 
-    <!-- NFSv4 programm -->
-    <bean id="nfsv4-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">
-        <description>NFSv4.1 programm number</description>
-        <constructor-arg index="0" value="100003" />
-        <constructor-arg index="1" value="4" />
-    </bean>
-
-
-    <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
-        <description>SSL Context factory</description>
-        <property name="certFilePath" value="/hostcert.pem"/>
-        <property name="keyFilePath" value="/hostkey.pem"/>
-        <property name="trustedCaBundle" value="/ca-chain.pem"/>
-    </bean>
-
     <!--
         ONC RPC service
     -->
@@ -248,12 +194,6 @@
             </map>
         </property>
     </bean>
-
-    <bean id="zk-curator-factory" class="org.dcache.nfs.zk.Curator4Spring">
-        <property name="connectString" value="${ZOOKEEPER_CONNECT}" />
-    </bean>
-
-    <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
 
     <beans profile="layoutstats">
         <bean id="iostat-kafka-template" class="org.springframework.kafka.core.KafkaTemplate">
