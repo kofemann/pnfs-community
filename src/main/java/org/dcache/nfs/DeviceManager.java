@@ -237,7 +237,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             throw new NoEntException("Unknown device id: " + deviceId);
         }
 
-        InetSocketAddress[] addrs = ds.addr;
+        InetSocketAddress[] addrs = ds.getMultipathAddresses();
 
         // limit addresses returned to client to the same 'type' as clients own address
         InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
@@ -297,18 +297,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         byte[] data = zkCurator.getData().forPath(node);
         Mirror mirror = ZkDataServer.stringToString(data);
 
-        DS ds = new DS();
-        ds.addr = mirror.getMultipath();
-
-        ds.channel = ManagedChannelBuilder
-                .forAddress(mirror.getBepAddress()[0].getAddress().getHostAddress(), mirror.getBepAddress()[0].getPort())
-                .usePlaintext() // disable SSL
-                .build();
-
-        ds.blockingStub = DataServerBepServiceGrpc
-                .newBlockingStub(ds.channel);
-
-
+        DS ds = new DS(mirror);
         _deviceMap.put(deviceidOf(mirror.getId()), ds);
     }
 
@@ -378,19 +367,14 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         if (stat.isDefined(Stat.StatAttribute.SIZE)) {
             deviceid4[] ids = getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_NFSV4_1_FILES);
 
-            SetFileSizeRequest request = SetFileSizeRequest.newBuilder()
-                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
-                    .setSize(stat.getSize())
-                    .build();
-
             for (deviceid4 id : ids) {
                 DS ds = _deviceMap.get(id);
                 if (ds == null) {
                     _log.warn("No such DS: {}", id);
                     throw new DelayException("Not all data servers online");
                 }
-                SetFileSizeResponse response = ds.blockingStub.setFileSize(request);
-                nfsstat.throwIfNeeded(response.getStatus());
+
+                ds.setFileSize(inode, stat.getSize());
             }
         }
         delegate().setattr(inode, stat);
@@ -401,12 +385,39 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         return fs;
     }
 
-
     private static class DS {
+
+        DS(Mirror mirror) {
+            addr = mirror.getMultipath();
+            channel = ManagedChannelBuilder
+                    .forAddress(mirror.getBepAddress()[0].getAddress().getHostAddress(), mirror.getBepAddress()[0].getPort())
+                    .usePlaintext() // disable SSL
+                    .build();
+
+            blockingStub = DataServerBepServiceGrpc
+                    .newBlockingStub(channel);
+        }
+
         // gRPC channel and co.
-        private ManagedChannel channel;
-        private DataServerBepServiceGrpc.DataServerBepServiceBlockingStub blockingStub;
-        private InetSocketAddress[] addr;
+        private final ManagedChannel channel;
+        private final DataServerBepServiceGrpc.DataServerBepServiceBlockingStub blockingStub;
+        private final InetSocketAddress[] addr;
+
+
+        void setFileSize(Inode inode, long size) throws ChimeraNFSException {
+
+            SetFileSizeRequest request = SetFileSizeRequest.newBuilder()
+                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+                    .setSize(size)
+                    .build();
+
+            SetFileSizeResponse response = blockingStub.setFileSize(request);
+            nfsstat.throwIfNeeded(response.getStatus());
+        }
+
+        InetSocketAddress[] getMultipathAddresses() {
+            return addr;
+        }
     }
 
 }
