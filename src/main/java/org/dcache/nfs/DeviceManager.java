@@ -21,7 +21,6 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import com.google.protobuf.ByteString;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -119,8 +118,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     // we use 'other' part of stateid as sequence number can change
     private IMap<byte[], byte[]> mdsStateIdCache;
 
-    private HazelcastInstance hz;
-
     @Autowired(required = false)
     private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
 
@@ -128,10 +125,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
-    }
-
-    public void setHazelcastClient(HazelcastInstance hz) {
-        this.hz = hz;
     }
 
     public void setChimeraVfs(ChimeraVfs fs) {
@@ -146,6 +139,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         this.layoutStats = layoutStats;
     }
 
+    public void setOpenStateidCache(IMap<byte[], byte[]> openStateIdCache) {
+        mdsStateIdCache = openStateIdCache;
+    }
+
     public void init() throws Exception {
 
         _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
@@ -154,8 +151,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         );
 
         _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
-
-        mdsStateIdCache = hz.getMap("open-stateid");
 
         dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
         dsNodeCache.getListenable().addListener((c, e) -> {

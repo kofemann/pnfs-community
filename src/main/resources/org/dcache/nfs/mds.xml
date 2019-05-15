@@ -111,7 +111,7 @@
         <property name="curatorFramework" ref="zk-curator" />
         <property name="chimeraVfs" ref="vfs-intern"/>
         <!-- <property name="layoutReturnConsumer" ref="layoutStats" /> autowired in profile layoutstats -->
-        <property name="hazelcastClient" ref="hz-client" />
+        <property name="openStateidCache" ref="open-stateid" />
     </bean>
 
     <!--
