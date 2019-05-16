@@ -311,21 +311,36 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
      * @param layoutType layout type for which device id is required
      * @return array of device ids.
      */
-    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException, IOException {
+    private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
 
-        deviceid4[] deviceId;
-        // independent from read or write, check existing location first
         String combinedLocation = fs.getInodeLayout(inode);
         if (combinedLocation != null) {
 
-            deviceId = Splitter.on(':')
+            return  Splitter.on(':')
                     .splitToList(combinedLocation)
                     .stream()
                     .map(UUID::fromString)
                     .map(Utils::deviceidOf)
                     .toArray(deviceid4[]::new);
+        }
+        return new deviceid4[0];
+    }
 
-        } else {
+
+    /**
+     * Returns an array of device ids associated with the file. If
+     * binding between {@code inode} and devices doesn't exists, then such binding
+     * is established.
+     * @param inode inode of the file
+     * @param iomode layout's IO mode
+     * @param layoutType layout type for which device id is required
+     * @return array of device ids.
+     */
+    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException, IOException {
+
+        // independent from read or write, check existing location first
+        deviceid4[] deviceId = getBoundDeviceId(inode);
+        if (deviceId.length == 0) {
 
             // on read, we always expect a location
             if (iomode == layoutiomode4.LAYOUTIOMODE4_READ) {
@@ -342,7 +357,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                 throw new LayoutTryLaterException("No dataservers available");
             }
 
-            combinedLocation = Arrays.asList(deviceId)
+            String combinedLocation = Arrays.asList(deviceId)
                     .stream()
                     .map(Utils::uuidOf)
                     .map(Object::toString)
