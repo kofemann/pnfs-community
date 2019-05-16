@@ -52,6 +52,8 @@ import java.util.stream.Stream;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.dcache.nfs.bep.DataServerBepServiceGrpc;
+import org.dcache.nfs.bep.RemoveFileRequest;
+import org.dcache.nfs.bep.RemoveFileResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.chimera.ChimeraVfs;
@@ -391,6 +393,22 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     }
 
     @Override
+    public void remove(Inode parent, String nanme) throws IOException {
+
+        Inode inode = lookup(parent, nanme);
+        super.remove(parent, nanme);
+        for (deviceid4 id : getBoundDeviceId(inode)) {
+            DS ds = _deviceMap.get(id);
+            if (ds == null) {
+                _log.warn("No such DS: {}", id);
+                throw new DelayException("Not all data servers online");
+            }
+
+            ds.removeFile(inode);
+        }
+    }
+
+    @Override
     protected VirtualFileSystem delegate() {
         return fs;
     }
@@ -422,6 +440,16 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                     .build();
 
             SetFileSizeResponse response = blockingStub.setFileSize(request);
+            nfsstat.throwIfNeeded(response.getStatus());
+        }
+
+        void removeFile(Inode inode) throws ChimeraNFSException {
+
+            RemoveFileRequest request = RemoveFileRequest.newBuilder()
+                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+                    .build();
+
+            RemoveFileResponse response = blockingStub.removeFile(request);
             nfsstat.throwIfNeeded(response.getStatus());
         }
 

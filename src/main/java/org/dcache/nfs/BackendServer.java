@@ -5,6 +5,8 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import org.dcache.nfs.bep.DataServerBepServiceGrpc;
+import org.dcache.nfs.bep.RemoveFileRequest;
+import org.dcache.nfs.bep.RemoveFileResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
 import org.dcache.nfs.vfs.Inode;
@@ -45,6 +47,20 @@ public class BackendServer {
             }
 
             SetFileSizeResponse reply = SetFileSizeResponse.newBuilder().setStatus(status).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void removeFile(RemoveFileRequest request, StreamObserver<RemoveFileResponse> responseObserver) {
+
+            byte[] fh = request.getFh().toByteArray();
+
+            fs.remove(new Inode(fh));
+
+            RemoveFileResponse reply = RemoveFileResponse.newBuilder()
+                    .setStatus(nfsstat.NFS_OK)
+                    .build();
             responseObserver.onNext(reply);
             responseObserver.onCompleted();
         }

@@ -9,6 +9,7 @@ package pnfs;
 
 service DataServerBepService {
     rpc SetFileSize (SetFileSizeRequest) returns (SetFileSizeResponse) {}
+    rpc removeFile (RemoveFileRequest) returns (RemoveFileResponse) {}
 }
 
 message SetFileSizeRequest {
@@ -17,5 +18,13 @@ message SetFileSizeRequest {
 }
 
 message SetFileSizeResponse {
+    uint32 status = 1;
+}
+
+message RemoveFileRequest {
+    bytes fh = 1;
+}
+
+message RemoveFileResponse {
     uint32 status = 1;
 }

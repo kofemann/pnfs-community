@@ -106,4 +106,22 @@ public class IoChannelCache {
         return _cache.getUnchecked(inode);
     }
 
+    public void remove(Inode inode) {
+
+        _cache.invalidate(inode);
+        File f = getLocalFile(_base, inode);
+        f.delete();
+    }
+
+    private static File getLocalFile(File base, Inode inode) {
+
+        byte[] fid = inode.getFileId();
+        String id = BaseEncoding.base16().lowerCase().encode(fid);
+
+        int len = id.length();
+        String topLevelDir = id.substring(len - 6, len - 4);
+        String subDir = id.substring(len - 4, len - 2);
+        File dir = new File(base, topLevelDir + "/" + subDir);
+        return new File(dir, id);
+    }
 }
