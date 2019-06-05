@@ -77,6 +77,18 @@ endpoint and topics to which to publish layouts IO statistics and error reports:
     command: mds --with-layoutstats
 ```
 
+#### RPC-over-TLS
+
+[RPC-over-TLS allows](https://datatracker.ietf.org/doc/draft-ietf-nfsv4-rpc-tls/) in transit packet protection by enabling TLS for client-server communication. This experimental feature can be enabled by adding `--with-tls` option to the command section:
+
+```
+command: mds --with-tls
+```
+
+>NOTE: when tls is used, it should be enabled on MDS and all DSes.
+
+In addition to `hostcert.pem`, `hostkey.pem` and `ca-chain.pem` files are required for hosr certificate, key and trusted CA chains.
+
 ## License
 
 LGPL v2 or newer

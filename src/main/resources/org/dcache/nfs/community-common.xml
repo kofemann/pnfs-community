@@ -64,11 +64,13 @@
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
 
-    <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
-        <description>SSL Context factory</description>
-        <property name="certFilePath" value="/hostcert.pem"/>
-        <property name="keyFilePath" value="/hostkey.pem"/>
-        <property name="trustedCaBundle" value="/ca-chain.pem"/>
-    </bean>
+    <beans profile="tls">
+        <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
+            <description>SSL Context factory</description>
+            <property name="certFilePath" value="/hostcert.pem"/>
+            <property name="keyFilePath" value="/hostkey.pem"/>
+            <property name="trustedCaBundle" value="/ca-chain.pem"/>
+        </bean>
+    </beans>
 
 </beans>

@@ -180,7 +180,7 @@
         <property name="autoPublish" value="false"/>
         <property name="enableJmx" value="true"/>
         <property name="useWorkerPool" value="true"/>
-        <property name="sslContext" ref="ssl-context-builder" />
+      <!--  <property name="sslContext" ref="ssl-context-builder" /> autowired in profile tls -->
         <property name="enableStartTLS" value="true" />
     </bean>
 
