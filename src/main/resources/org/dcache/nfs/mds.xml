@@ -135,14 +135,8 @@
     <!--
         NFSv4.1 Operation factory
     -->
-    <bean id="mds-factory-inner" class="org.dcache.nfs.v4.MDSOperationFactory">
-        <description>MDS operation factory</description>
-    </bean>
-
-    <bean id="mds-factory" class="org.dcache.nfs.v4.OperationFactoryMXBeanImpl">
-        <description>MDS operation factory JMX wrapper</description>
-        <constructor-arg ref="mds-factory-inner"/>
-        <constructor-arg value="mds"/>
+    <bean id="mds-op-executor" class="org.dcache.nfs.v4.MDSOperationExecutor">
+        <description>MDS operation executor</description>
     </bean>
 
     <bean id="idmapd" class="org.dcache.nfs.v4.SimpleIdMap" />
@@ -163,7 +157,7 @@
     -->
     <bean id="mds" class="org.dcache.nfs.v4.NFSServerV41Factory" depends-on="export-init">
         <description>NFSv4.1 MDS server</description>
-        <property name="operationFactory" ref="mds-factory"/>
+        <property name="operationFactory" ref="mds-op-executor"/>
         <property name="deviceManager" ref="device-manager" />
         <property name="vfs" ref="vfs" />
         <property name="exportFile" ref="export" />
@@ -180,8 +174,8 @@
         <property name="autoPublish" value="false"/>
         <property name="enableJmx" value="true"/>
         <property name="useWorkerPool" value="true"/>
-      <!--  <property name="sslContext" ref="ssl-context-builder" /> autowired in profile tls -->
-        <property name="enableStartTLS" value="true" />
+      <!--  <property name="sslContext" ref="ssl-context-builder" /> autowired in profile tls
+        <property name="enableStartTLS" value="true" /> -->
     </bean>
 
     <bean id="oncrpcsvc" class="org.dcache.oncrpc4j.rpc.OncRpcSvc"

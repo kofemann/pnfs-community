@@ -10,8 +10,8 @@ import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadStateidException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
+import org.dcache.nfs.v4.AbstractOperationExecutor;
 import org.dcache.nfs.v4.CompoundContext;
-import org.dcache.nfs.v4.NFSv4OperationFactory;
 import org.dcache.nfs.v4.OperationBIND_CONN_TO_SESSION;
 import org.dcache.nfs.v4.OperationCREATE_SESSION;
 import org.dcache.nfs.v4.OperationDESTROY_CLIENTID;
@@ -41,7 +41,7 @@ import org.dcache.oncrpc4j.rpc.OncRpcException;
 /**
  *
  */
-public class EDSNFSv4OperationFactory implements NFSv4OperationFactory {
+public class EDSNFSv4OperationFactory extends AbstractOperationExecutor {
 
     // we use 'other' part of stateid as sequence number can change
     private final IMap<byte[], byte[]> mdsStateIdCache;
@@ -53,7 +53,7 @@ public class EDSNFSv4OperationFactory implements NFSv4OperationFactory {
     }
 
     @Override
-    public AbstractNFSv4Operation getOperation(nfs_argop4 op) {
+    protected AbstractNFSv4Operation getOperation(nfs_argop4 op) {
         switch (op.argop) {
             case nfs_opnum4.OP_COMMIT:
                 return new DSOperationCOMMIT(op);
