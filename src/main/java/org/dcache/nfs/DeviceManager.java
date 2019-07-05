@@ -69,9 +69,15 @@ import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
+import org.dcache.nfs.v4.Stateids;
+import org.dcache.nfs.v4.xdr.GETDEVICEINFO4args;
+import org.dcache.nfs.v4.xdr.GETDEVICELIST4args;
+import org.dcache.nfs.v4.xdr.LAYOUTGET4args;
+import org.dcache.nfs.v4.xdr.LAYOUTRETURN4args;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.dcache.nfs.v4.ff.flex_files_prot;
 import org.dcache.nfs.v4.xdr.layoutiomode4;
+import org.dcache.nfs.v4.xdr.layoutreturn_type4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
 import org.dcache.nfs.v4.xdr.offset4;
@@ -176,18 +182,21 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
      * (non-Javadoc)
      *
      * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutGet(CompoundContext context,
-     *              Inode inode, int layoutType, int ioMode, stateid4 stateid)
+     *              LAYOUTGET4args args)
      */
     @Override
-    public Layout layoutGet(CompoundContext context, Inode inode, layouttype4 layoutType, int ioMode, stateid4 stateid)
+    public Layout layoutGet(CompoundContext context, LAYOUTGET4args args)
             throws IOException {
 
         final NFS4Client client = context.getSession().getClient();
+        final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.loga_stateid);
         final NFS4State nfsState = client.state(stateid);
 
+        Inode inode = context.currentInode();
+        layouttype4 layoutType = layouttype4.valueOf(args.loga_layout_type);
         LayoutDriver layoutDriver = getLayoutDriver(layoutType);
 
-        deviceid4[] deviceId = getOrBindDeviceId(inode, ioMode, layoutType);
+        deviceid4[] deviceId = getOrBindDeviceId(inode, args.loga_iomode, layoutType);
 
         NFS4State openState = nfsState.getOpenState();
         final stateid4 rawOpenState = openState.stateid();
@@ -211,7 +220,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
         //  -1 is special value, which means entire file
         layout4 layout = new layout4();
-        layout.lo_iomode = ioMode;
+        layout.lo_iomode = args.loga_iomode;
         layout.lo_offset = new offset4(0);
         layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
         layout.lo_content = layoutDriver.getLayoutContent(rawOpenState,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
@@ -222,10 +231,14 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     /*
      * (non-Javadoc)
      *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceInfo(CompoundContext context, deviceid4 deviceId)
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceInfo(CompoundContext context,
+     *             GETDEVICEINFO4args args)
      */
     @Override
-    public device_addr4 getDeviceInfo(CompoundContext context, deviceid4 deviceId, layouttype4 layoutType) throws ChimeraNFSException {
+    public device_addr4 getDeviceInfo(CompoundContext context, GETDEVICEINFO4args args) throws ChimeraNFSException {
+
+        deviceid4 deviceId = args.gdia_device_id;
+        layouttype4 layoutType = layouttype4.valueOf(args.gdia_layout_type);
 
         _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
 
@@ -251,25 +264,32 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     /*
      * (non-Javadoc)
      *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceList()
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceList(CompoundContext context,
+     *             GETDEVICELIST4args args)
      */
     @Override
-    public List<deviceid4> getDeviceList(CompoundContext context) {
+    public List<deviceid4> getDeviceList(CompoundContext context, GETDEVICELIST4args args) {
         return new ArrayList<>(_deviceMap.keySet());
     }
 
     /*
      * (non-Javadoc)
      *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn()
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn(CompoundContext context,
+     *             LAYOUTRETURN4args args)
      */
     @Override
-    public void layoutReturn(CompoundContext context, stateid4 stateid, layouttype4 layoutType, byte[] body) throws ChimeraNFSException {
-        _log.debug("release device for stateid {}", stateid);
-        final NFS4Client client = context.getSession().getClient();
-        final NFS4State layoutState = client.state(stateid);
-        _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
-        getLayoutDriver(layoutType).acceptLayoutReturnData(context, body);
+    public void layoutReturn(CompoundContext context, LAYOUTRETURN4args args) throws ChimeraNFSException {
+
+        if (args.lora_layout_type == layoutreturn_type4.LAYOUTRETURN4_FILE) {
+            final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.lora_layoutreturn.lr_layout.lrf_stateid);
+            layouttype4 layoutType = layouttype4.valueOf(args.lora_layout_type);
+            _log.debug("release device for stateid {}", stateid);
+            final NFS4Client client = context.getSession().getClient();
+            final NFS4State layoutState = client.state(stateid);
+            _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
+            getLayoutDriver(layoutType).acceptLayoutReturnData(context, args.lora_layoutreturn.lr_layout.lrf_body);
+        }
     }
 
     private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
