@@ -157,7 +157,7 @@
     -->
     <bean id="mds" class="org.dcache.nfs.v4.NFSServerV41Factory" depends-on="export-init">
         <description>NFSv4.1 MDS server</description>
-        <property name="operationFactory" ref="mds-op-executor"/>
+        <property name="operationExecutor" ref="mds-op-executor"/>
         <property name="deviceManager" ref="device-manager" />
         <property name="vfs" ref="vfs" />
         <property name="exportFile" ref="export" />

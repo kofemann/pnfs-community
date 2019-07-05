@@ -47,7 +47,7 @@
     -->
     <bean id="ds" class="org.dcache.nfs.v4.NFSServerV41Factory">
         <description>NFSv4.1 MDS server</description>
-        <property name="operationFactory" ref="ds-factory"/>
+        <property name="operationExecutor" ref="ds-factory"/>
     </bean>
 
     <!--
