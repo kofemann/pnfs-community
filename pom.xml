@@ -43,9 +43,9 @@
         <version.hazelcast>3.12.1</version.hazelcast>
         <version.curator>4.2.0</version.curator>
         <version.grpc>1.21.0</version.grpc>
-        <spring-integration-kafka.version>3.1.0.RELEASE</spring-integration-kafka.version>
-        <spring-kafka.version>2.2.0.RELEASE</spring-kafka.version>
-        <kafka.version>2.2.0</kafka.version>
+        <spring-integration-kafka.version>3.1.4.RELEASE</spring-integration-kafka.version>
+        <spring-kafka.version>2.2.7.RELEASE</spring-kafka.version>
+        <kafka.version>2.3.0</kafka.version>
         <slf4j.version>1.7.26</slf4j.version>
         <canl.version>2.6.0</canl.version>
         <spring-context.version>5.1.0.RELEASE</spring-context.version>
