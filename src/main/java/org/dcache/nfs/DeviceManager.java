@@ -43,6 +43,7 @@ import java.util.EnumMap;
 import org.dcache.nfs.status.NoEntException;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +73,7 @@ import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
 import org.dcache.nfs.v4.Stateids;
 import org.dcache.nfs.v4.xdr.GETDEVICEINFO4args;
 import org.dcache.nfs.v4.xdr.GETDEVICELIST4args;
+import org.dcache.nfs.v4.xdr.LAYOUTCOMMIT4args;
 import org.dcache.nfs.v4.xdr.LAYOUTGET4args;
 import org.dcache.nfs.v4.xdr.LAYOUTRETURN4args;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
@@ -290,6 +292,30 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
             getLayoutDriver(layoutType).acceptLayoutReturnData(context, args.lora_layoutreturn.lr_layout.lrf_body);
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutCommit(CompoundContext context,
+     *             LAYOUTCOMMIT4args args)
+     */
+    @Override
+    public OptionalLong layoutCommit(CompoundContext context, LAYOUTCOMMIT4args args) throws IOException {
+
+        Inode inode = context.currentInode();
+        if (args.loca_last_write_offset.no_newoffset) {
+            Stat stat = fs.getattr(inode);
+            long currentSize = stat.getSize();
+            long newSize = args.loca_last_write_offset.no_offset.value + 1;
+            if (newSize > currentSize) {
+                Stat newStat = new Stat();
+                newStat.setSize(newSize);
+                fs.setattr(context.currentInode(), newStat);
+                return OptionalLong.of(newSize);
+            }
+        }
+        return OptionalLong.empty();
     }
 
     private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
