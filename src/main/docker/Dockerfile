@@ -1,11 +1,11 @@
-#  Based  on CentOS-7.6
-FROM centos:7
+#  Based on Alpine-3.10
+FROM alpine:3.10
 
 # Add JRE
-RUN yum -y install java-11-openjdk-headless
+RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # Run community as user 'pnfs'
-RUN groupadd pnfs && useradd -r -g pnfs pnfs
+RUN addgroup pnfs && adduser -S -G pnfs pnfs
 
 # add external files into container at the build time
 COPY run.sh /run.sh
