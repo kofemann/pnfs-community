@@ -71,6 +71,7 @@
         <description>Device manager</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="chimeraVfs" ref="vfs-intern"/>
+        <property name="vfs" ref="vfs"/>
         <!-- <property name="layoutReturnConsumer" ref="layoutStats" /> autowired in profile layoutstats -->
         <property name="openStateidCache" ref="open-stateid" />
     </bean>

@@ -89,6 +89,7 @@ import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.ForwardingFileSystem;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
+import org.dcache.nfs.vfs.VfsCache;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
@@ -134,6 +135,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
 
     private ChimeraVfs fs;
+    // FIXME: we don't need cache and non cache version at the same time
+    private VfsCache fsCache;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
@@ -141,6 +144,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     public void setChimeraVfs(ChimeraVfs fs) {
         this.fs = fs;
+    }
+
+    public void setVfs(VfsCache fs) {
+        this.fsCache = fs;
     }
 
     public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -313,7 +320,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             if (newSize > currentSize) {
                 Stat newStat = new Stat();
                 newStat.setSize(newSize);
-                fs.setattr(context.currentInode(), newStat);
+                fs.setattr(inode, newStat);
+                fsCache.invalidateStatCache(inode);
                 return OptionalLong.of(newSize);
             }
         }
