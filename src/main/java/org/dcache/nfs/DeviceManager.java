@@ -74,8 +74,10 @@ import org.dcache.nfs.v4.Stateids;
 import org.dcache.nfs.v4.xdr.GETDEVICEINFO4args;
 import org.dcache.nfs.v4.xdr.GETDEVICELIST4args;
 import org.dcache.nfs.v4.xdr.LAYOUTCOMMIT4args;
+import org.dcache.nfs.v4.xdr.LAYOUTERROR4args;
 import org.dcache.nfs.v4.xdr.LAYOUTGET4args;
 import org.dcache.nfs.v4.xdr.LAYOUTRETURN4args;
+import org.dcache.nfs.v4.xdr.LAYOUTSTATS4args;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.dcache.nfs.v4.ff.flex_files_prot;
 import org.dcache.nfs.v4.xdr.layoutiomode4;
@@ -316,6 +318,29 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             }
         }
         return OptionalLong.empty();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutStats(CompoundContext context,
+     *             LAYOUTSTATS4args args)
+     */
+
+    @Override
+    public void layoutStats(CompoundContext contex, LAYOUTSTATS4args args) throws IOException {
+        // NOP
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutError(CompoundContext context,
+     *             LAYOUTERROR4args args)
+     */
+    @Override
+    public void layoutError(CompoundContext contex, LAYOUTERROR4args args) throws IOException {
+        // NOP
     }
 
     private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {

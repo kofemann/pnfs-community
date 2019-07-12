@@ -67,8 +67,8 @@ public class IoStatSerializer implements Serializer<ff_iostats4> {
     private JSONObject getIoInfo(io_info4 info) {
         JSONObject o = new JSONObject();
 
-        o.put("count", info.ii_count.value);
-        o.put("bytes", info.ii_bytes.value);
+        o.put("count", info.ii_count);
+        o.put("bytes", info.ii_bytes);
         return o;
     }
 
