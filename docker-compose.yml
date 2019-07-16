@@ -58,6 +58,7 @@ services:
     - zk
     environment:
     - JAVA_OPT=
+    - JMX_PORT=7777
     - KAFKA_BOOTSTRAP_SERVER=kafka:9092
     - KAFKA_IOSTAT_TOPIC=iostat
     - KAFKA_IOERR_TOPIC=ioerr
@@ -66,6 +67,7 @@ services:
     command: mds
     ports:
     - "2049:2049"
+    - "127.0.0.1:7777:7777"
     volumes:
     - ./exports:/pnfs/etc/exports
     - ./nfs.properties:/pnfs/etc/nfs.properties
