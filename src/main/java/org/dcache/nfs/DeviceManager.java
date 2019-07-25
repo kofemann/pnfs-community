@@ -223,9 +223,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                         mdsStateIdCache.remove(rawOpenState.other);
                     }
             );
-        } else {
-            layoutStateId.bumpSeqid();
         }
+        layoutStateId.bumpSeqid();
 
         nfs_fh4 fh = new nfs_fh4(context.currentInode().toNfsHandle());
 
