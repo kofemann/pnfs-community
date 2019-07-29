@@ -13,6 +13,7 @@ services:
       nofile:
         soft: 4096
         hard: 8192
+    restart: unless-stopped
 
 #  kafka:
 #    image: wurstmeister/kafka
@@ -35,6 +36,7 @@ services:
 #    - LOG4J_LOGGER_ORG_APACHE_ZOOKEEPER=WARN
 #    volumes:
 #    - /var/run/docker.sock:/var/run/docker.sock
+#    restart: unless-stopped
 
   hz:
     image: hazelcast/hazelcast
@@ -48,6 +50,7 @@ services:
     - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml
     volumes:
     - "./hazelcast.xml:/hazelcast.xml"
+    restart: unless-stopped
 
   mds:
     image: dcache/pnfs-community
@@ -80,6 +83,7 @@ services:
       options:
         max-size: "1m"
         max-file: "5"
+    restart: unless-stopped
 
   ds1:
     image: dcache/pnfs-community
@@ -107,6 +111,7 @@ services:
       options:
         max-size: "1m"
         max-file: "5"
+    restart: unless-stopped
 
   ds2:
     image: dcache/pnfs-community
@@ -134,3 +139,4 @@ services:
       options:
         max-size: "1m"
         max-file: "5"
+    restart: unless-stopped
