@@ -8,9 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@master
-    - uses: actions/setup-java@v1
+    - uses: xlui/action-maven-cli/jdk11@master"
       with:
-        java-version: '11'
-    - run: java -version
+        args: clean package
   
