@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: xlui/action-maven-cli/jdk11@master"
+    - uses: LucaFeger/action-maven-cli@master
       with:
         args: clean package
   
