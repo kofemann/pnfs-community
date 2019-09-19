@@ -41,16 +41,16 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.hazelcast>3.12.1</version.hazelcast>
+        <version.hazelcast>3.12.2</version.hazelcast>
         <version.curator>4.2.0</version.curator>
         <version.grpc>1.23.0</version.grpc>
-        <spring-integration-kafka.version>3.1.4.RELEASE</spring-integration-kafka.version>
-        <spring-kafka.version>2.2.7.RELEASE</spring-kafka.version>
+        <spring-integration-kafka.version>3.1.5.RELEASE</spring-integration-kafka.version>
+        <spring-kafka.version>2.2.8.RELEASE</spring-kafka.version>
         <kafka.version>2.3.0</kafka.version>
         <slf4j.version>1.7.26</slf4j.version>
         <canl.version>2.6.0</canl.version>
         <spring-context.version>5.1.0.RELEASE</spring-context.version>
-        <metrics.version>4.0.0</metrics.version>
+        <metrics.version>4.0.6</metrics.version>
     </properties>
 
     <build>
@@ -77,7 +77,7 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>0.30.0</version>
+                <version>0.31.0</version>
                 <configuration>
                     <images>
                         <image>
@@ -354,7 +354,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <version>2.0.23.Final</version>
+            <version>2.0.25.Final</version>
         </dependency>
 
         <dependency>
