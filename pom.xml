@@ -41,7 +41,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.hazelcast>3.12.2</version.hazelcast>
+        <version.hazelcast>3.12.3</version.hazelcast>
         <version.curator>4.2.0</version.curator>
         <version.grpc>1.24.0</version.grpc>
         <spring-integration-kafka.version>3.1.5.RELEASE</spring-integration-kafka.version>
