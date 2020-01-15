@@ -8,8 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@master
-    - uses: LucaFeger/action-maven-cli@master
+    - uses: actions/checkout@v1
+    - uses: actions/cache@v1
       with:
-        args: clean package
-  
+        path: ~/.m2/repository
+    - name: Setup JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    - name: Set up Maven
+      uses: aahmed-se/setup-maven@v3
+      with:
+        maven-version: 3.6.1
+    - name: Build project
+      run: mvn clean install 
