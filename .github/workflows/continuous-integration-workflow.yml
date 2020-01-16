@@ -25,3 +25,9 @@ jobs:
         maven-version: 3.6.1
     - name: Build project
       run: mvn clean install 
+    - name: Login into docker HUB
+      run: docker login --username ${{ secrets.DOCKER_USERNAME }} --password ${{ secrets.DOCKER_PASSWORD }}
+    - name: Publish to docker HUB
+      run: docker push dcache/pnfs-community:latest
+    - name: Logoff from docker HUB
+      run: docker logout
