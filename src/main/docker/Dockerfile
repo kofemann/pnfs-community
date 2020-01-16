@@ -1,5 +1,5 @@
-#  Based on Alpine-3.10
-FROM alpine:3.10
+#  Based on Alpine-3.11
+FROM alpine:3.11
 
 # Add JRE
 RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
