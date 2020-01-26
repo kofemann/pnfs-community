@@ -8,7 +8,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Main {
 
@@ -35,10 +35,10 @@ public class Main {
                 .toArray(String[]::new);
 
         String config = "org/dcache/nfs/" + mode + ".xml";
-        try (GenericApplicationContext context = new GenericApplicationContext()) {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
 
-            XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(context);
             context.getEnvironment().setActiveProfiles(profiles);
+            XmlBeanDefinitionReader xmlReader = new XmlBeanDefinitionReader(context);
             xmlReader.loadBeanDefinitions(config);
             context.refresh();
 
