@@ -291,7 +291,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     @Override
     public void layoutReturn(CompoundContext context, LAYOUTRETURN4args args) throws ChimeraNFSException {
 
-        if (args.lora_layout_type == layoutreturn_type4.LAYOUTRETURN4_FILE) {
+        if (args.lora_layoutreturn.lr_returntype == layoutreturn_type4.LAYOUTRETURN4_FILE) {
             final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.lora_layoutreturn.lr_layout.lrf_stateid);
             layouttype4 layoutType = layouttype4.valueOf(args.lora_layout_type);
             _log.debug("release device for stateid {}", stateid);
