@@ -15,28 +15,28 @@ services:
         hard: 8192
     restart: unless-stopped
 
-#  kafka:
-#    image: wurstmeister/kafka
-#    depends_on:
-#    - zk
-#    ports:
-#    - "9092:9092"
-#    mem_limit: 512m
-#    ulimits:
-#      nproc: 65535
-#      nofile:
-#        soft: 4096
-#        hard: 8192
-#    environment:
-#    - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
-#    - KAFKA_CREATE_TOPICS=iostat:1:1,ioerr:1:1
-#    - KAFKA_ZOOKEEPER_CONNECT=zk:2181/kafka
-#    - LOG4J_LOGGER_KAFKA=WARN
-#    - LOG4J_LOGGER_ORG_APACHE_KAFKA=WARN
-#    - LOG4J_LOGGER_ORG_APACHE_ZOOKEEPER=WARN
-#    volumes:
-#    - /var/run/docker.sock:/var/run/docker.sock
-#    restart: unless-stopped
+  kafka:
+    image: wurstmeister/kafka
+    depends_on:
+    - zk
+    ports:
+    - "9092:9092"
+    mem_limit: 512m
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 4096
+        hard: 8192
+    environment:
+    - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
+    - KAFKA_CREATE_TOPICS=iostat:1:1,ioerr:1:1
+    - KAFKA_ZOOKEEPER_CONNECT=zk:2181/kafka
+    - LOG4J_LOGGER_KAFKA=WARN
+    - LOG4J_LOGGER_ORG_APACHE_KAFKA=WARN
+    - LOG4J_LOGGER_ORG_APACHE_ZOOKEEPER=WARN
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
 
   hz:
     image: hazelcast/hazelcast
@@ -59,6 +59,7 @@ services:
     depends_on:
     - hz
     - zk
+    - kafka
     environment:
     - JAVA_OPT=
     - JMX_PORT=7777
@@ -67,7 +68,7 @@ services:
     - KAFKA_IOERR_TOPIC=ioerr
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
-    command: mds
+    command: mds --with-layoutstats
     ports:
     - "2049:2049"
     - "127.0.0.1:7777:7777"
