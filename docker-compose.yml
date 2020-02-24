@@ -39,7 +39,7 @@ services:
     restart: unless-stopped
 
   hz:
-    image: hazelcast/hazelcast
+    image: hazelcast/hazelcast:3.12
     mem_limit: 512m
     ulimits:
       nproc: 65535
