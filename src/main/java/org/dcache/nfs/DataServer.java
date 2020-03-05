@@ -21,7 +21,6 @@ import org.dcache.nfs.zk.ZkDataServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.dcache.nfs.Utils.getLocalAddresses;
 
 public class DataServer {
@@ -102,14 +101,13 @@ public class DataServer {
         Path p = new File(idFile).toPath();
 
         if (Files.isRegularFile(p)) {
-            byte[] b = Files.readAllBytes(p);
-            return UUID.fromString(new String(b, US_ASCII));
+            return UUID.fromString(Files.readString(p));
         } else if (Files.exists(p)) {
             throw new FileAlreadyExistsException("Path exists and not a regular file");
         }
 
         UUID id = UUID.randomUUID();
-        Files.write(p, id.toString().getBytes(US_ASCII),
+        Files.writeString(p, id.toString(),
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.WRITE, StandardOpenOption.DSYNC);
         return id;
