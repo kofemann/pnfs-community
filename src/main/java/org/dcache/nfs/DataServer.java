@@ -105,7 +105,7 @@ public class DataServer {
             byte[] b = Files.readAllBytes(p);
             return UUID.fromString(new String(b, US_ASCII));
         } else if (Files.exists(p)) {
-            throw new FileAlreadyExistsException("Path existis and not a regular file");
+            throw new FileAlreadyExistsException("Path exists and not a regular file");
         }
 
         UUID id = UUID.randomUUID();
