@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2017 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2020 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -681,4 +681,31 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public boolean setInodeLayout(Inode inode, String layout) throws IOException {
         return _fs.setInodeLocation(toFsInode(inode), 1, layout);
     }
+
+    @Override
+    public byte[] getXattr(Inode inode, String attr) throws IOException {
+        FsInode fsInode = toFsInode(inode);
+        return _fs.getXattr(fsInode, attr);
+    }
+
+    @Override
+    public void setXattr(Inode inode, String attr, byte[] value, SetXattrMode mode) throws IOException {
+        FsInode fsInode = toFsInode(inode);
+
+        // FIXME: handle mode
+        _fs.setXattr(fsInode, attr, value);
+    }
+
+    @Override
+    public String[] listXattrs(Inode inode) throws IOException {
+        FsInode fsInode = toFsInode(inode);
+        return _fs.listXattrs(fsInode).stream().toArray(String[]::new);
+    }
+
+    @Override
+    public void removeXattr(Inode inode, String attr) throws IOException {
+        FsInode fsInode = toFsInode(inode);
+        _fs.removeXattr(fsInode, attr);
+    }
+
 }
