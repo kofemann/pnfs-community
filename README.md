@@ -13,7 +13,7 @@ A simple NFSv4.1/pNFS community for testing and demonstration.
 ## Running
 
 The pNFS community requires apache zookeeper and apache kafka to run.
-The location to the services can be configure through environment variables:
+The location to the services can be configured through environment variables:
 
 ```sh
 export KAFKA_BOOTSTRAP_SERVER=kafka:9092
@@ -57,7 +57,7 @@ The provided **docker-compose.yml** file comes with pre-configured zookeeper, ka
 layout stats processing and hazelcast cache for MDS<->DS state validation.
 
 to start **N** data servers. NOTICE: if number of data servers more than one (1)
-and flexfiles layout is used then MDS will offer to write into two (2) DSes (mirroring).
+and flexfiles layout used then MDS will offer to write into two (2) DSes (mirroring).
 
 #### Layout statistics
 
@@ -87,7 +87,7 @@ command: mds --with-tls
 
 >NOTE: when tls is used, it should be enabled on MDS and all DSes.
 
-In addition to `hostcert.pem`, `hostkey.pem` and `ca-chain.pem` files are required for hosr certificate, key and trusted CA chains.
+In addition to `hostcert.pem`, `hostkey.pem` and `ca-chain.pem` files required for host certificate, key and trusted CA chains.
 
 ## License
 
