@@ -21,6 +21,7 @@ package org.dcache.nfs.chimera;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
+import org.dcache.chimera.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,30 +39,6 @@ import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.AceType;
 import org.dcache.acl.enums.Who;
 import org.dcache.auth.Subjects;
-import org.dcache.chimera.ChimeraFsException;
-import org.dcache.chimera.DirNotEmptyHimeraFsException;
-import org.dcache.chimera.DirectoryStreamHelper;
-import org.dcache.chimera.FileExistsChimeraFsException;
-import org.dcache.chimera.FileNotFoundHimeraFsException;
-import org.dcache.chimera.FsInode;
-import org.dcache.chimera.FsInodeType;
-import org.dcache.chimera.FsInode_CONST;
-import org.dcache.chimera.FsInode_ID;
-import org.dcache.chimera.FsInode_NAMEOF;
-import org.dcache.chimera.FsInode_PARENT;
-import org.dcache.chimera.FsInode_PATHOF;
-import org.dcache.chimera.FsInode_PCRC;
-import org.dcache.chimera.FsInode_PCUR;
-import org.dcache.chimera.FsInode_PLOC;
-import org.dcache.chimera.FsInode_PSET;
-import org.dcache.chimera.FsInode_TAG;
-import org.dcache.chimera.FsInode_TAGS;
-import org.dcache.chimera.InvalidArgumentChimeraException;
-import org.dcache.chimera.IsDirChimeraException;
-import org.dcache.chimera.JdbcFs;
-import org.dcache.chimera.NotDirChimeraException;
-import org.dcache.chimera.StorageGenericLocation;
-import org.dcache.chimera.StorageLocatable;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadOwnerException;
@@ -692,8 +669,22 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public void setXattr(Inode inode, String attr, byte[] value, SetXattrMode mode) throws IOException {
         FsInode fsInode = toFsInode(inode);
 
-        // FIXME: handle mode
-        _fs.setXattr(fsInode, attr, value);
+        FileSystemProvider.SetXattrMode m;
+        switch (mode) {
+            case CREATE:
+                m = FileSystemProvider.SetXattrMode.CREATE;
+                break;
+            case REPLACE:
+                m = FileSystemProvider.SetXattrMode.REPLACE;
+                break;
+
+            case EITHER:
+                m = FileSystemProvider.SetXattrMode.EITHER;
+                break;
+            default:
+                throw new RuntimeException();
+        }
+        _fs.setXattr(fsInode, attr, value, m);
     }
 
     @Override
