@@ -22,6 +22,7 @@ package org.dcache.nfs.chimera;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.dcache.chimera.*;
+import org.dcache.nfs.status.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,17 +41,6 @@ import org.dcache.acl.enums.AceType;
 import org.dcache.acl.enums.Who;
 import org.dcache.auth.Subjects;
 import org.dcache.nfs.ChimeraNFSException;
-import org.dcache.nfs.status.BadHandleException;
-import org.dcache.nfs.status.BadOwnerException;
-import org.dcache.nfs.status.ExistException;
-import org.dcache.nfs.status.InvalException;
-import org.dcache.nfs.status.IsDirException;
-import org.dcache.nfs.status.LayoutUnavailableException;
-import org.dcache.nfs.status.NfsIoException;
-import org.dcache.nfs.status.NoEntException;
-import org.dcache.nfs.status.NotDirException;
-import org.dcache.nfs.status.NotEmptyException;
-import org.dcache.nfs.status.StaleException;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.nfs.v4.acl.Acls;
 import org.dcache.nfs.v4.xdr.aceflag4;
@@ -662,7 +652,11 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     @Override
     public byte[] getXattr(Inode inode, String attr) throws IOException {
         FsInode fsInode = toFsInode(inode);
-        return _fs.getXattr(fsInode, attr);
+        try {
+            return _fs.getXattr(fsInode, attr);
+        } catch (NoXdataChimeraException e) {
+            throw new NoXattrException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -684,7 +678,13 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
             default:
                 throw new RuntimeException();
         }
-        _fs.setXattr(fsInode, attr, value, m);
+        try {
+            _fs.setXattr(fsInode, attr, value, m);
+        } catch (NoXdataChimeraException e) {
+            throw new NoXattrException(e.getMessage(), e);
+        } catch (FileExistsChimeraFsException e) {
+            throw new ExistException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -696,7 +696,11 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     @Override
     public void removeXattr(Inode inode, String attr) throws IOException {
         FsInode fsInode = toFsInode(inode);
-        _fs.removeXattr(fsInode, attr);
+        try {
+            _fs.removeXattr(fsInode, attr);
+        } catch (NoXdataChimeraException e) {
+            throw new NoXattrException(e.getMessage(), e);
+        }
     }
 
 }
