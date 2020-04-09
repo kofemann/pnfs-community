@@ -12,7 +12,7 @@
     <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
         <property name="locations">
             <list>
-                <value>file:///pnfs/etc/ds.properties</value>
+               <!--A <value>file:///pnfs/etc/ds.properties</value> -->
             </list>
         </property>
         <property name="environment">
@@ -24,7 +24,7 @@
 
     <!-- create data directory for DS -->
     <bean id="ds-data-dir" class="java.io.File" init-method="mkdirs">
-        <constructor-arg value="${base}" />
+        <constructor-arg value="/pnfs/data" />
     </bean>
 
     <bean id="ds-data-pool" class="org.dcache.nfs.IoChannelCache" init-method="init">
@@ -83,9 +83,9 @@
         <description>Data Server</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioChannelCache" ref="ds-data-pool" />
+        <property name="idFile" value="/pnfs/etc/ds-id" />
         <property name="port" value="${NFS_PORT}" />
-        <property name="idFile" value="${idfile}" />
-        <property name="bepPort" value="${bepPort}" />
+        <property name="bepPort" value="${BEP_PORT}" />
     </bean>
 
     <beans profile="krb5">
