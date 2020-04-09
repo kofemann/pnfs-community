@@ -6,7 +6,7 @@ A simple NFSv4.1/pNFS community for testing and demonstration.
 
 ### Requirements
 
-- Java 8
+- Java 11
 - Apache maven 3.3
 - docker (optional)
 
@@ -74,6 +74,7 @@ endpoint and topics to which to publish layouts IO statistics and error reports:
     - KAFKA_BOOTSTRAP_SERVER=kafka:9092
     - KAFKA_IOSTAT_TOPIC=iostat
     - KAFKA_IOERR_TOPIC=ioerr
+    - NFS_PORT=2049
     command: mds --with-layoutstats
 ```
 
@@ -88,6 +89,20 @@ command: mds --with-tls
 >NOTE: when tls is used, it should be enabled on MDS and all DSes.
 
 In addition to `hostcert.pem`, `hostkey.pem` and `ca-chain.pem` files required for host certificate, key and trusted CA chains.
+
+## Configuration
+
+The `pnfs-community` uses various environment variables the as configuration
+
+| Name                   | description                             | component  | required |
+| :---                   | ------------:                           | ---------: | --------: |
+| NFS_PORT               | TCP port exposed to the clients         | MDS and DS | yes|
+| SEP_PORT               | TCP port used by back-end protocol      | DS         | yes|
+| HAZELCAST_HOST         | host where hazelcast service is running | MDS and DS | yes |
+| ZOOKEEPER_CONNECT      | Zookeeper endpoint                      | MDS and DS | yes |
+| KAFKA_BOOTSTRAP_SERVER | Kafka broker endpoint                   | MDS        | only if kafka enabled |
+| KAFKA_IOSTAT_TOPIC     | Kafka topic to report io statistics     | MDS        | only if kafka enabled |
+|KAFKA_IOERR_TOPIC       | Kafka topic to report io errors         | MDS        | only if kafka enabled |
 
 ## License
 
