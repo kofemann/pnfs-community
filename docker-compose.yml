@@ -67,6 +67,7 @@ services:
     - KAFKA_IOSTAT_TOPIC=iostat
     - KAFKA_IOERR_TOPIC=ioerr
     - ZOOKEEPER_CONNECT=zk:2181
+    - NFS_PORT=2049
     - HAZELCAST_HOST=hz
     command: mds --with-layoutstats
     ports:
@@ -99,6 +100,7 @@ services:
     - JAVA_OPT=
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
+    - NFS_PORT=2052
     command: ds
     ports:
     - "2052:2052"
@@ -127,6 +129,7 @@ services:
     - JAVA_OPT=
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
+    - NFS_PORT=2053
     command: ds
     ports:
     - "2053:2053"

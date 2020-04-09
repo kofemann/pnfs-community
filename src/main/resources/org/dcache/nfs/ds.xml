@@ -55,7 +55,7 @@
     -->
     <bean id="oncrpcsvc-builder" class="org.dcache.oncrpc4j.spring.OncRpcSvcFactoryBean">
         <description>Onc RPC service builder for MDS</description>
-        <property name="port" value="${port}"/>
+        <property name="port" value="${NFS_PORT}"/>
         <property name="useTCP" value="true"/>
         <property name="autoPublish" value="false"/>
         <property name="enableJmx" value="true"/>
@@ -83,7 +83,7 @@
         <description>Data Server</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioChannelCache" ref="ds-data-pool" />
-        <property name="port" value="${port}" />
+        <property name="port" value="${NFS_PORT}" />
         <property name="idFile" value="${idfile}" />
         <property name="bepPort" value="${bepPort}" />
     </bean>
