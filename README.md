@@ -30,7 +30,7 @@ where **oncrpcsvc.xml** is spring config file to start the server.
 
 ### Kubernetes deployment
 
-A special set of [deployment scripts)[https://github.com/kofemann/pnfs-community-k8s]
+A special set of [deployment scripts](https://github.com/kofemann/pnfs-community-k8s)
 
 ### As docker container
 
