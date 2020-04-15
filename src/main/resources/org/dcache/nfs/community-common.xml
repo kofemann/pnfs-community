@@ -36,7 +36,7 @@
         <hz:network connection-attempt-limit="3"
                     connection-attempt-period="30000" connection-timeout="1000"
                     redo-operation="false" smart-routing="false">
-            <hz:member>hz</hz:member>
+            <hz:member>${HAZELCAST_HOST}</hz:member>
         </hz:network>
 
         <hz:near-cache name="open-stateid"
