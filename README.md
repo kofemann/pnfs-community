@@ -28,6 +28,10 @@ java -jar chimera-nfs-0.0.1-SNAPSHOT.jar oncrpcsvc.xml
 
 where **oncrpcsvc.xml** is spring config file to start the server.
 
+### Kubernetes deployment
+
+A special set of [deployment scripts)[https://github.com/kofemann/pnfs-community-k8s]
+
 ### As docker container
 
 For a quick start, use provided **docker-compose.yml** file. As
