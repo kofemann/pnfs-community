@@ -1,16 +1,13 @@
 package org.dcache.nfs;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
 import org.dcache.nfs.v4.xdr.deviceid4;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.oncrpc4j.util.Bytes;
+
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.UUID;
 
 /**
  *
@@ -20,22 +17,12 @@ public class Utils {
     private Utils() {}
 
     public static InetSocketAddress[] getLocalAddresses(int port) throws SocketException {
-        List<InetSocketAddress> localaddresses = new ArrayList<>();
 
-        Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
-        while (ifaces.hasMoreElements()) {
-            NetworkInterface iface = ifaces.nextElement();
-            if (!iface.isUp() || iface.getName().startsWith("br-") || iface.isLoopback()) {
-                continue;
-            }
-
-            Enumeration<InetAddress> addrs = iface.getInetAddresses();
-            while (addrs.hasMoreElements()) {
-                InetAddress addr = addrs.nextElement();
-                localaddresses.add(new InetSocketAddress(addr, port));
-            }
-        }
-        return localaddresses.toArray(new InetSocketAddress[0]);
+        return NetworkInterface.networkInterfaces()
+                .filter(Utils::isUp)
+                .flatMap(NetworkInterface::inetAddresses)
+                .map(a -> new InetSocketAddress(a, port))
+                .toArray(InetSocketAddress[]::new);
     }
 
     public static deviceid4 deviceidOf(UUID id) {
@@ -51,5 +38,13 @@ public class Utils {
         long low = Bytes.getLong(id.value, 8);
 
         return new UUID(high, low);
+    }
+
+    private static boolean isUp(NetworkInterface iface) {
+        try {
+            return iface.isUp() && !iface.isLoopback() && !iface.getName().startsWith("br-");
+        } catch (SocketException e) {
+            return false;
+        }
     }
 }
