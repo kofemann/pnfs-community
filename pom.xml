@@ -64,6 +64,24 @@
         </extensions>
         <plugins>
             <plugin>
+                <groupId>org.gaul</groupId>
+                <artifactId>modernizer-maven-plugin</artifactId>
+                <version>2.1.0</version>
+                <configuration>
+                    <javaVersion>${java.version}</javaVersion>
+                    <failOnViolations>false</failOnViolations>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>modernizer</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>modernizer</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
