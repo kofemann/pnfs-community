@@ -148,10 +148,19 @@
 
     <bean id="idmapd" class="org.dcache.nfs.v4.SimpleIdMap" />
 
+    <bean id="state-handler-id-factory" class="org.dcache.nfs.zk.ZkNfsStateHaldler">
+        <property name="base" value="/nfs/mds" />
+        <property name="curatorFramework" ref="zk-curator" />
+        <property name="storeName" value="state-handler-id" />
+        <property name="identifier" value="${HOSTNAME}" />
+    </bean>
+
+    <bean id="state-handler-id" factory-bean="state-handler-id-factory" factory-method="getOrCreateId" />
+
     <bean id="state-handler" class="org.dcache.nfs.v4.NFSv4StateHandler">
         <description>NFSv4 client and state handler</description>
         <constructor-arg index="0" value="${nfs.lease.time}"/>
-        <constructor-arg index="1" value="0"/>
+        <constructor-arg index="1" ref="state-handler-id"/>
         <constructor-arg>
             <bean class="org.dcache.nfs.v4.BerkeleyDBClientStore" destroy-method="close">
                 <constructor-arg value="${nfs.state.store}" />
