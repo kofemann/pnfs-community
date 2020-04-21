@@ -20,7 +20,6 @@
 package org.dcache.nfs.chimera;
 
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Longs;
 import org.dcache.chimera.*;
 import org.dcache.nfs.status.*;
 import org.slf4j.Logger;
@@ -328,7 +327,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         stat.setGid(pStat.getGid());
         stat.setUid(pStat.getUid());
         stat.setDev(pStat.getDev());
-        stat.setIno(Longs.hashCode(pStat.getIno()));
+        stat.setIno(Long.hashCode(pStat.getIno()));
         stat.setMode(pStat.getMode());
         stat.setNlink(pStat.getNlink());
         stat.setRdev(pStat.getRdev());
