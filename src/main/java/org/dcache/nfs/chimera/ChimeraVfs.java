@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.dcache.acl.ACE;
 import org.dcache.acl.enums.AceFlags;
@@ -216,14 +217,15 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         // ignore whatever is sent by client
         byte[] currentVerifier = directoryVerifier(inode);
 
-        TreeSet<DirectoryEntry> list = DirectoryStreamHelper.streamOf(parentFsInode)
-                .map(e -> new DirectoryEntry(e.getName(), toInode(e.getInode()),
-                        fromChimeraStat(e.getStat(), e.getInode().ino()),
-                        directoryCookieOf(e.getStat(), e.getName()))
-                )
-                .collect(Collectors.toCollection(TreeSet::new));
+        try(Stream<HimeraDirectoryEntry> dirStream = DirectoryStreamHelper.streamOf(parentFsInode)) {
+            TreeSet<DirectoryEntry> list = dirStream.map(e -> new DirectoryEntry(e.getName(), toInode(e.getInode()),
+                            fromChimeraStat(e.getStat(), e.getInode().ino()),
+                            directoryCookieOf(e.getStat(), e.getName()))
+                    )
+                    .collect(Collectors.toCollection(TreeSet::new));
 
-        return new DirectoryStream(currentVerifier, list);
+            return new DirectoryStream(currentVerifier, list);
+        }
     }
 
     @Override
