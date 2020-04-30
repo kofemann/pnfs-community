@@ -155,7 +155,7 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>3.3.1</version>
+            <version>3.4.3</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -207,7 +207,7 @@
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
-            <version>3.6.2</version>
+            <version>3.8.9</version>
         </dependency>
         <dependency>
             <groupId>org.dcache</groupId>
@@ -258,7 +258,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20180813</version>
+            <version>20190722</version>
         </dependency>
 
         <dependency>
