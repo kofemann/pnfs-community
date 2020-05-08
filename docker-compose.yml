@@ -28,6 +28,7 @@ services:
         soft: 4096
         hard: 8192
     environment:
+    - KAFKA_BROKER_ID=1
     - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
     - KAFKA_CREATE_TOPICS=iostat:1:1,ioerr:1:1
     - KAFKA_ZOOKEEPER_CONNECT=zk:2181/kafka
