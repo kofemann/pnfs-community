@@ -67,7 +67,7 @@
     <!--
         NFSv4.1 pNFS Data Server manager
     -->
-    <bean id="device-manager" class="org.dcache.nfs.DeviceManager" init-method="init">
+    <bean id="device-manager" class="org.dcache.nfs.DeviceManager" init-method="init" destroy-method="shutdown">
         <description>Device manager</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="chimeraVfs" ref="vfs-intern"/>

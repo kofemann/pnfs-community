@@ -189,6 +189,11 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         dsNodeCache.start();
 
     }
+
+    public void shutdown() throws IOException {
+
+        dsNodeCache.close();
+    }
     /*
      * (non-Javadoc)
      *
@@ -379,7 +384,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     private void removeDS(String node) throws Exception {
         String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
         UUID deviceId = UUID.fromString(id);
-        _deviceMap.remove(deviceidOf(deviceId));
+        DS ds = _deviceMap.remove(deviceidOf(deviceId));
+        if (ds != null) {
+            ds.shutdown();
+        }
     }
 
     /**
@@ -532,6 +540,11 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
         InetSocketAddress[] getMultipathAddresses() {
             return addr;
         }
+
+        public void shutdown() {
+            channel.shutdown();
+        }
+
     }
 
 }
