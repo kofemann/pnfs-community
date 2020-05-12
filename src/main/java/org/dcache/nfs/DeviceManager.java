@@ -387,8 +387,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
      * binding between {@code inode} and devices doesn't exists, then such binding
      * is established.
      * @param inode inode of the file
-     * @param iomode layout's IO mode
-     * @param layoutType layout type for which device id is required
      * @return array of device ids.
      */
     private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
