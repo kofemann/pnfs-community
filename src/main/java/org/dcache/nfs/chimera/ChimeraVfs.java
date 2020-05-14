@@ -528,7 +528,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
      *
      * @param handle to construct inode from.
      * @return object inode.
-     * @throws ChimeraFsException
+     * @throws BadHandleException if provided data can't be converted into FsInode
      */
     public FsInode inodeFromBytes(byte[] handle) throws BadHandleException {
         FsInode inode;
