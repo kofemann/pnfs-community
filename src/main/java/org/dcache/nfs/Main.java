@@ -28,8 +28,7 @@ public class Main {
 
         String mode = args[0];
 
-        String[] profiles = Arrays.asList(args)
-                .stream()
+        String[] profiles = Arrays.stream(args)
                 .filter(s -> s.startsWith(OPTION_PREFIX))
                 .map(s -> s.substring(OPTION_PREFIX.length()))
                 .toArray(String[]::new);

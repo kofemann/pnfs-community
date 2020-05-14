@@ -443,8 +443,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                 throw new LayoutTryLaterException("No dataservers available");
             }
 
-            String combinedLocation = Arrays.asList(deviceId)
-                    .stream()
+            String combinedLocation = Arrays.stream(deviceId)
                     .map(Utils::uuidOf)
                     .map(Object::toString)
                     .collect(Collectors.joining(":"));
