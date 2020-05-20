@@ -705,4 +705,14 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
         }
     }
 
+    @Override
+    public boolean getCaseInsensitive() {
+        return true;
+    }
+
+    @Override
+    public boolean getCasePreserving() {
+        return true;
+    }
+
 }
