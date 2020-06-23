@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <hazelcast
-        xsi:schemaLocation="http://www.hazelcast.com/schema/config http://www.hazelcast.com/schema/config/hazelcast-config-3.11.xsd"
+        xsi:schemaLocation="http://www.hazelcast.com/schema/config http://www.hazelcast.com/schema/config/hazelcast-config-4.0.xsd"
         xmlns="http://www.hazelcast.com/schema/config"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <group>
-        <name>pnfs-community</name>
-    </group>
+    <cluster-name>pnfs-community</cluster-name>
 
     <properties>
         <property name="hazelcast.discovery.enabled">false</property>
@@ -16,20 +14,19 @@
     <!-- explicit disable all networking option: single node mode -->
     <network>
         <join>
-            <multicast enabled="false" />
-            <tcp-ip enabled="true" />
-            <aws enabled="false" />
+            <multicast enabled="false"/>
+            <tcp-ip enabled="true"/>
+            <aws enabled="false"/>
         </join>
     </network>
 
     <cache name="open-stateid">
-         <key-type class-name="[B"/>
-         <value-type class-name="[B"/>
-         <in-memory-format>BINARY</in-memory-format>
-         <read-through>false</read-through>
-         <write-through>false</write-through>
-         <statistics-enabled>true</statistics-enabled>
-         <management-enabled>true</management-enabled>
-     </cache>
+        <in-memory-format>BINARY</in-memory-format>
+        <key-type class-name="[B"/>
+        <value-type class-name="[B"/>
+        <read-through>false</read-through>
+        <write-through>false</write-through>
+        <statistics-enabled>true</statistics-enabled>
+    </cache>
 
 </hazelcast>

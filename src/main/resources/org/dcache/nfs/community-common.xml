@@ -7,7 +7,7 @@
            http://www.springframework.org/schema/context
            http://www.springframework.org/schema/context/spring-context.xsd
            http://www.hazelcast.com/schema/spring
-           http://www.hazelcast.com/schema/spring/hazelcast-spring.xsd">
+           http://www.hazelcast.com/schema/spring/hazelcast-spring-4.0.xsd">
 
 
     <!--
@@ -23,32 +23,50 @@
         </property>
     </bean>
 
+
+    <hz:map id="open-stateid" name="open-stateid" instance-ref="hz-client" />
+
     <hz:client id="hz-client">
         <hz:spring-aware/>
-        <hz:group name="pnfs-community"/>
+        <hz:cluster-name>pnfs-community</hz:cluster-name>
 
         <hz:properties>
             <hz:property name="hazelcast.logging.type">slf4j</hz:property>
             <hz:property name="hazelcast.discovery.enabled">false</hz:property>
             <hz:property name="hazelcast.phone.home.enabled">false</hz:property>
+            <hz:property name="hazelcast.client.retry.count">3</hz:property>
         </hz:properties>
 
-        <hz:network connection-attempt-limit="3"
-                    connection-attempt-period="30000" connection-timeout="1000"
+        <hz:network connection-timeout="1000"
                     redo-operation="false" smart-routing="false">
+
             <hz:member>${HAZELCAST_HOST}</hz:member>
+            <hz:socket-options buffer-size="32"
+                               keep-alive="false"
+                               linger-seconds="3"
+                               reuse-address="false"
+                               tcp-no-delay="true"/>
+
+            <hz:discovery-strategies/>
+            <hz:outbound-ports>
+                <!--
+                Allowed port range when connecting to other members.
+                0 or * means the port provided by the system.
+                -->
+                <hz:ports>0</hz:ports>
+            </hz:outbound-ports>
+
         </hz:network>
 
         <hz:near-cache name="open-stateid"
                        cache-local-entries="false"
-                       eviction-policy="LFU"
                        in-memory-format="BINARY"
                        invalidate-on-change="true"
                        max-idle-seconds="0"
-                       time-to-live-seconds="90" />
+                       time-to-live-seconds="90">
+            <hz:eviction eviction-policy="LRU" size="5000"/>
+        </hz:near-cache>
     </hz:client>
-
-    <hz:map id="open-stateid" name="open-stateid" instance-ref="hz-client" />
 
     <!-- NFSv4 programm -->
     <bean id="nfsv4-programm" class="org.dcache.oncrpc4j.rpc.OncRpcProgram">

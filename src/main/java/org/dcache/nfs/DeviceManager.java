@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2020 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import com.google.protobuf.ByteString;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.dcache.nfs.v4.xdr.layout4;

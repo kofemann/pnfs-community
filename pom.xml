@@ -41,7 +41,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.hazelcast>3.12.6</version.hazelcast>
+        <version.hazelcast>4.0.1</version.hazelcast>
         <version.curator>4.3.0</version.curator>
         <version.grpc>1.27.1</version.grpc>
         <spring-integration-kafka.version>3.2.1.RELEASE</spring-integration-kafka.version>
@@ -264,11 +264,6 @@
         <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
-            <version>${version.hazelcast}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-client</artifactId>
             <version>${version.hazelcast}</version>
         </dependency>
         <dependency>

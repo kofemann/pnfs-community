@@ -1,6 +1,6 @@
 package org.dcache.nfs;
 
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
