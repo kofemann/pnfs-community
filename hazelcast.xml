@@ -20,13 +20,9 @@
         </join>
     </network>
 
-    <cache name="open-stateid">
+    <map name="open-stateid">
         <in-memory-format>BINARY</in-memory-format>
-        <key-type class-name="[B"/>
-        <value-type class-name="[B"/>
-        <read-through>false</read-through>
-        <write-through>false</write-through>
         <statistics-enabled>true</statistics-enabled>
-    </cache>
+    </map>
 
 </hazelcast>
