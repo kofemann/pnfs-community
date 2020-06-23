@@ -28,28 +28,6 @@
 
     <import resource="community-common.xml"/>
 
-    <hz:hazelcast id="hazelcastInstance">
-
-        <hz:config>
-            <hz:group name="dcache-namespace"/>
-            <hz:properties>
-                <hz:property name="hazelcast.logging.type">slf4j</hz:property>
-                <hz:property name="hazelcast.discovery.enabled">false</hz:property>
-                <hz:property name="hazelcast.phone.home.enabled">false</hz:property>
-            </hz:properties>
-            <hz:network port="5701" port-auto-increment="true">
-                <hz:join>
-                    <hz:multicast enabled="false"/>
-                    <hz:tcp-ip enabled="false"/>
-                    <hz:aws enabled="false"/>
-                </hz:join>
-            </hz:network>
-        </hz:config>
-    </hz:hazelcast>
-
-    <hz:map id="inumber-to-pnfsid" name="inumber-to-pnfsid" instance-ref="hazelcastInstance" />
-    <hz:map id="pnfsid-to-inumber" name="pnfsid-to-inumber" instance-ref="hazelcastInstance" />
-
     <bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
         <description>Database connection pool</description>
         <constructor-arg>
@@ -94,7 +72,6 @@
         <description>Chimera Filesystem</description>
         <constructor-arg ref="dataSource" />
         <constructor-arg ref="tx-manager" />
-        <constructor-arg ref="hazelcastInstance" />
     </bean>
 
     <bean id="vfs-intern" class="org.dcache.nfs.chimera.ChimeraVfs">
