@@ -101,12 +101,12 @@ The `pnfs-community` uses various environment variables the as configuration
 | Name                   | description                             | component  | required |
 | :---                   | ------------:                           | ---------: | --------: |
 | NFS_PORT               | TCP port exposed to the clients         | MDS and DS | yes|
-| SEP_PORT               | TCP port used by back-end protocol      | DS         | yes|
+| BEP_PORT               | TCP port used by back-end protocol      | DS         | yes|
 | HAZELCAST_HOST         | host where hazelcast service is running | MDS and DS | yes |
 | ZOOKEEPER_CONNECT      | Zookeeper endpoint                      | MDS and DS | yes |
 | KAFKA_BOOTSTRAP_SERVER | Kafka broker endpoint                   | MDS        | only if kafka enabled |
 | KAFKA_IOSTAT_TOPIC     | Kafka topic to report io statistics     | MDS        | only if kafka enabled |
-|KAFKA_IOERR_TOPIC       | Kafka topic to report io errors         | MDS        | only if kafka enabled |
+| KAFKA_IOERR_TOPIC      | Kafka topic to report io errors         | MDS        | only if kafka enabled |
 
 ## License
 
