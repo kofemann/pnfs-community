@@ -19,11 +19,12 @@
  */
 package org.dcache.nfs;
 
-import com.google.common.base.Splitter;
 import com.google.protobuf.ByteString;
 import com.hazelcast.map.IMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.dcache.nfs.status.ExistException;
+import org.dcache.nfs.status.NoXattrException;
 import org.dcache.nfs.v4.xdr.layout4;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.v4.xdr.nfs_fh4;
@@ -48,7 +49,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -106,6 +106,13 @@ import static org.dcache.nfs.Utils.deviceidOf;
 public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceManager {
 
     private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
+
+    /**
+     * extended attribute used to store file's location.
+     * The location stored as a raw byte arrays , where each nfs4_prot.NFS4_DEVICEID4_SIZE bytes
+     * represent a single deviceid.
+     */
+    private static final String PNFS_LOCATION_XATTR = "pnfs.location";
 
     private final Map<deviceid4, DS> _deviceMap =
             new ConcurrentHashMap<>();
@@ -399,17 +406,22 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
      */
     private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
 
-        String combinedLocation = fs.getInodeLayout(inode);
-        if (combinedLocation != null) {
+        try {
+            byte[] combinedLocation = fs.getXattr(inode, PNFS_LOCATION_XATTR);
 
-            return  Splitter.on(':')
-                    .splitToList(combinedLocation)
-                    .stream()
-                    .map(UUID::fromString)
-                    .map(Utils::deviceidOf)
-                    .toArray(deviceid4[]::new);
+            deviceid4[] deviceid4s = new deviceid4[combinedLocation.length/nfs4_prot.NFS4_DEVICEID4_SIZE];
+
+            for(int i = 0; i < deviceid4s.length; i++) {
+                byte[] id = Arrays.copyOfRange(combinedLocation,
+                        i*nfs4_prot.NFS4_DEVICEID4_SIZE,
+                        (i+1)*nfs4_prot.NFS4_DEVICEID4_SIZE);
+                deviceid4s[i] = new deviceid4(id);
+            }
+
+            return deviceid4s;
+        } catch (NoXattrException e) {
+            return new deviceid4[0];
         }
-        return new deviceid4[0];
     }
 
 
@@ -443,12 +455,15 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                 throw new LayoutTryLaterException("No dataservers available");
             }
 
-            String combinedLocation = Arrays.stream(deviceId)
-                    .map(Utils::uuidOf)
-                    .map(Object::toString)
-                    .collect(Collectors.joining(":"));
 
-            if (!fs.setInodeLayout(inode, combinedLocation)) {
+            byte[] id = new byte[deviceId.length*nfs4_prot.NFS4_DEVICEID4_SIZE];
+            for(int i = 0; i < deviceId.length; i++ ) {
+                System.arraycopy(deviceId[i].value, 0, id, i*nfs4_prot.NFS4_DEVICEID4_SIZE, nfs4_prot.NFS4_DEVICEID4_SIZE);
+            }
+
+            try {
+                fs.setXattr(inode, PNFS_LOCATION_XATTR, id, SetXattrMode.CREATE);
+            } catch (ExistException e) {
                 // we fail, as other location is set. try again
                 return getOrBindDeviceId(inode, iomode, layoutType);
             }
