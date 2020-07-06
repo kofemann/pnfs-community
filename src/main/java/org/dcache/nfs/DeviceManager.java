@@ -479,7 +479,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     public void remove(Inode parent, String nanme) throws IOException {
 
         Inode inode = lookup(parent, nanme);
-        super.remove(parent, nanme);
         for (deviceid4 id : getBoundDeviceId(inode)) {
             DS ds = _deviceMap.get(id);
             if (ds == null) {
@@ -489,6 +488,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
             ds.removeFile(inode);
         }
+        super.remove(parent, nanme);
     }
 
     @Override
