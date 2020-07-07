@@ -26,23 +26,22 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 
 public class Curator4Spring {
 
-    private String connectionString;
+  private String connectionString;
 
-    public void setConnectString(String connect) {
-        connectionString = connect;
+  public void setConnectString(String connect) {
+    connectionString = connect;
+  }
+
+  public CuratorFramework getCurator() {
+
+    try {
+      final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+      CuratorFramework client = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
+      client.start();
+      return client;
+    } catch (Throwable e) {
+      e.printStackTrace();
+      throw e;
     }
-
-    public CuratorFramework getCurator() {
-
-        try {
-            final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-            CuratorFramework client = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
-            client.start();
-            return client;
-        } catch (Throwable e) {
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
+  }
 }

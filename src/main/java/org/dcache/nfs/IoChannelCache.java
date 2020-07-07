@@ -29,99 +29,100 @@ import org.dcache.nfs.vfs.Inode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public class IoChannelCache {
 
-    private final static Logger _log = LoggerFactory.getLogger(IoChannelCache.class);
+  private static final Logger _log = LoggerFactory.getLogger(IoChannelCache.class);
 
-    private static class FileChannelSupplier extends CacheLoader<Inode, RandomAccessFile> {
+  private static class FileChannelSupplier extends CacheLoader<Inode, RandomAccessFile> {
 
-        private final File _base;
+    private final File _base;
 
-        FileChannelSupplier(File base) {
-            if (!base.isDirectory()) {
-                throw new IllegalArgumentException(base + " : not exist or not a directory");
-            }
-            _base = base;
-        }
-
-        @Override
-        public RandomAccessFile load(Inode inode) throws IOException {
-            byte[] fid = inode.getFileId();
-            String id = BaseEncoding.base16().lowerCase().encode(fid);
-            File dir = getAndCreateDirectory(id);
-            File f = new File(dir, id);
-            return new RandomAccessFile(f, "rw");
-        }
-
-        private File getAndCreateDirectory(String id) {
-            int len = id.length();
-            String topLevelDir = id.substring(len - 6, len - 4);
-            String subDir = id.substring(len - 4, len - 2);
-            File dir = new File(_base, topLevelDir + "/" + subDir);
-            dir.mkdirs();
-            return dir;
-        }
+    FileChannelSupplier(File base) {
+      if (!base.isDirectory()) {
+        throw new IllegalArgumentException(base + " : not exist or not a directory");
+      }
+      _base = base;
     }
 
-    private static class InodeGarbageCollector implements RemovalListener<Inode, RandomAccessFile> {
-
-        @Override
-        public void onRemoval(RemovalNotification<Inode, RandomAccessFile> notification) {
-            try {
-                notification.getValue().close();
-            } catch (IOException e) {
-                _log.error("Failed to close file channel of {} : {}",
-                        notification.getKey(), e.getMessage());
-            }
-        }
-    }
-    private LoadingCache<Inode, RandomAccessFile> _cache;
-    private int _maxSize;
-    private int _lastAccess;
-    private File _base;
-
-    public void setBase(File base) {
-        this._base = base;
+    @Override
+    public RandomAccessFile load(Inode inode) throws IOException {
+      byte[] fid = inode.getFileId();
+      String id = BaseEncoding.base16().lowerCase().encode(fid);
+      File dir = getAndCreateDirectory(id);
+      File f = new File(dir, id);
+      return new RandomAccessFile(f, "rw");
     }
 
-    public void setMaxSize(int maxSize) {
-        this._maxSize = maxSize;
+    private File getAndCreateDirectory(String id) {
+      int len = id.length();
+      String topLevelDir = id.substring(len - 6, len - 4);
+      String subDir = id.substring(len - 4, len - 2);
+      File dir = new File(_base, topLevelDir + "/" + subDir);
+      dir.mkdirs();
+      return dir;
     }
+  }
 
-    public void setLastAccess(int timeInSec) {
-        _lastAccess = timeInSec;
+  private static class InodeGarbageCollector implements RemovalListener<Inode, RandomAccessFile> {
+
+    @Override
+    public void onRemoval(RemovalNotification<Inode, RandomAccessFile> notification) {
+      try {
+        notification.getValue().close();
+      } catch (IOException e) {
+        _log.error(
+            "Failed to close file channel of {} : {}", notification.getKey(), e.getMessage());
+      }
     }
-    public void init() {
-        _cache = CacheBuilder.newBuilder()
-                .maximumSize(_maxSize)
-                .expireAfterAccess(_lastAccess, TimeUnit.SECONDS)
-                .removalListener(new InodeGarbageCollector())
-                .build(new FileChannelSupplier(_base));
-    }
+  }
 
-    public RandomAccessFile get(Inode inode) {
-        return _cache.getUnchecked(inode);
-    }
+  private LoadingCache<Inode, RandomAccessFile> _cache;
+  private int _maxSize;
+  private int _lastAccess;
+  private File _base;
 
-    public void remove(Inode inode) {
+  public void setBase(File base) {
+    this._base = base;
+  }
 
-        _cache.invalidate(inode);
-        File f = getLocalFile(_base, inode);
-        f.delete();
-    }
+  public void setMaxSize(int maxSize) {
+    this._maxSize = maxSize;
+  }
 
-    private static File getLocalFile(File base, Inode inode) {
+  public void setLastAccess(int timeInSec) {
+    _lastAccess = timeInSec;
+  }
 
-        byte[] fid = inode.getFileId();
-        String id = BaseEncoding.base16().lowerCase().encode(fid);
+  public void init() {
+    _cache =
+        CacheBuilder.newBuilder()
+            .maximumSize(_maxSize)
+            .expireAfterAccess(_lastAccess, TimeUnit.SECONDS)
+            .removalListener(new InodeGarbageCollector())
+            .build(new FileChannelSupplier(_base));
+  }
 
-        int len = id.length();
-        String topLevelDir = id.substring(len - 6, len - 4);
-        String subDir = id.substring(len - 4, len - 2);
-        File dir = new File(base, topLevelDir + "/" + subDir);
-        return new File(dir, id);
-    }
+  public RandomAccessFile get(Inode inode) {
+    return _cache.getUnchecked(inode);
+  }
+
+  public void remove(Inode inode) {
+
+    _cache.invalidate(inode);
+    File f = getLocalFile(_base, inode);
+    f.delete();
+  }
+
+  private static File getLocalFile(File base, Inode inode) {
+
+    byte[] fid = inode.getFileId();
+    String id = BaseEncoding.base16().lowerCase().encode(fid);
+
+    int len = id.length();
+    String topLevelDir = id.substring(len - 6, len - 4);
+    String subDir = id.substring(len - 4, len - 2);
+    File dir = new File(base, topLevelDir + "/" + subDir);
+    return new File(dir, id);
+  }
 }

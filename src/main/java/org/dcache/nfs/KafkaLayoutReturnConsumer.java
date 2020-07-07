@@ -26,34 +26,29 @@ import org.dcache.nfs.v4.ff.ff_iostats4;
 import org.dcache.nfs.v4.ff.ff_layoutreturn4;
 import org.springframework.kafka.core.KafkaTemplate;
 
-/**
- * A {@link BiConsumer} that sends layout information to Apache Kafka.
- */
-public class KafkaLayoutReturnConsumer implements BiConsumer<CompoundContext, ff_layoutreturn4>{
+/** A {@link BiConsumer} that sends layout information to Apache Kafka. */
+public class KafkaLayoutReturnConsumer implements BiConsumer<CompoundContext, ff_layoutreturn4> {
 
+  private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
+  private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
 
-    private KafkaTemplate<Object, ff_iostats4> iostatKafkaTemplate;
-    private KafkaTemplate<Object, ff_ioerr4> ioerrKafkaTemplate;
+  public void setIoStatKafkaTemplate(KafkaTemplate<Object, ff_iostats4> template) {
+    iostatKafkaTemplate = template;
+  }
 
+  public void setIoErrKafkaTemplate(KafkaTemplate<Object, ff_ioerr4> template) {
+    ioerrKafkaTemplate = template;
+  }
 
-    public void setIoStatKafkaTemplate(KafkaTemplate<Object, ff_iostats4> template) {
-        iostatKafkaTemplate = template;
+  @Override
+  public void accept(CompoundContext context, ff_layoutreturn4 lr) {
+
+    for (ff_iostats4 iostat : lr.fflr_iostats_report) {
+      iostatKafkaTemplate.sendDefault(iostat);
     }
 
-    public void setIoErrKafkaTemplate(KafkaTemplate<Object, ff_ioerr4> template) {
-        ioerrKafkaTemplate = template;
+    for (ff_ioerr4 ioerr : lr.fflr_ioerr_report) {
+      ioerrKafkaTemplate.sendDefault(ioerr);
     }
-
-    @Override
-    public void accept(CompoundContext context, ff_layoutreturn4 lr) {
-
-        for (ff_iostats4 iostat : lr.fflr_iostats_report) {
-            iostatKafkaTemplate.sendDefault(iostat);
-        }
-
-        for (ff_ioerr4 ioerr : lr.fflr_ioerr_report) {
-            ioerrKafkaTemplate.sendDefault(ioerr);
-        }
-    }
-
+  }
 }

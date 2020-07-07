@@ -28,65 +28,67 @@ import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 // use jdk.internal.misc.Signal for jdk-9
 import sun.misc.Signal;
 
-/**
- * Class to scan export file and create missing directories
- */
+/** Class to scan export file and create missing directories */
 public class ExportPathCreator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExportPathCreator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExportPathCreator.class);
 
-    private ExportFile exportFile;
-    private VirtualFileSystem vfs;
+  private ExportFile exportFile;
+  private VirtualFileSystem vfs;
 
-    public void setVfs(VirtualFileSystem vfs) {
-        this.vfs = vfs;
+  public void setVfs(VirtualFileSystem vfs) {
+    this.vfs = vfs;
+  }
+
+  public void setExportFile(ExportFile exportFile) {
+    this.exportFile = exportFile;
+  }
+
+  private static Inode tryToCreateIfMissing(VirtualFileSystem vfs, Inode inode, String name)
+      throws IOException {
+    try {
+      return vfs.lookup(inode, name);
+    } catch (NoEntException e) {
+      return vfs.mkdir(inode, name, Subjects.ROOT, 0777);
     }
+  }
 
-    public void setExportFile(ExportFile exportFile) {
-        this.exportFile = exportFile;
-    }
+  public void init() throws IOException {
 
-    private static Inode tryToCreateIfMissing(VirtualFileSystem vfs, Inode inode, String name) throws IOException {
-        try {
-            return vfs.lookup(inode, name);
-        } catch (NoEntException e) {
-            return vfs.mkdir(inode, name, Subjects.ROOT, 0777);
-        }
-    }
+    registerSignalHandler(exportFile);
 
-    public void init() throws IOException {
+    Inode root = vfs.getRootInode();
+    exportFile
+        .exports()
+        .map(FsExport::getPath)
+        .forEach(
+            path -> {
+              Splitter splitter = Splitter.on('/').omitEmptyStrings();
+              Inode inode = root;
+              for (String s : splitter.split(path)) {
+                try {
+                  inode = tryToCreateIfMissing(vfs, inode, s);
+                } catch (IOException e) {
+                  return;
+                }
+              }
+            });
+  }
 
-        registerSignalHandler(exportFile);
-
-        Inode root = vfs.getRootInode();
-        exportFile.exports()
-                .map(FsExport::getPath)
-                .forEach(path -> {
-                    Splitter splitter = Splitter.on('/').omitEmptyStrings();
-                    Inode inode = root;
-                    for (String s : splitter.split(path)) {
-                        try {
-                            inode = tryToCreateIfMissing(vfs, inode, s);
-                        }catch(IOException e) {
-                            return;
-                        }
-                    }
-                });
-    }
-
-    @SuppressWarnings("restriction")
-    private static void registerSignalHandler(final ExportFile exports) {
-        Signal.handle(new Signal("HUP"), (Signal signal) -> {
-            try {
-                LOGGER.info("HUP signal received, rescanning exports file.");
-                exports.rescan();
-            } catch (IOException e) {
-                LOGGER.error("Failed to re-read export file: {}", e.getMessage());
-            }
+  @SuppressWarnings("restriction")
+  private static void registerSignalHandler(final ExportFile exports) {
+    Signal.handle(
+        new Signal("HUP"),
+        (Signal signal) -> {
+          try {
+            LOGGER.info("HUP signal received, rescanning exports file.");
+            exports.rescan();
+          } catch (IOException e) {
+            LOGGER.error("Failed to re-read export file: {}", e.getMessage());
+          }
         });
-    }
+  }
 }

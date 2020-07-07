@@ -96,472 +96,473 @@ import org.dcache.nfs.zk.ZkDataServer;
 
 import static org.dcache.nfs.Utils.deviceidOf;
 
-/**
- *
- * the instance of this class have to ask Pool Manager for a pool and return it
- * to the client.
- *
- */
-
+/** the instance of this class have to ask Pool Manager for a pool and return it to the client. */
 public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceManager {
 
-    private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
+  private static final Logger _log = LoggerFactory.getLogger(DeviceManager.class);
 
-    /**
-     * extended attribute used to store file's location.
-     * The location stored as a raw byte arrays , where each nfs4_prot.NFS4_DEVICEID4_SIZE bytes
-     * represent a single deviceid.
-     */
-    private static final String PNFS_LOCATION_XATTR = "pnfs.location";
+  /**
+   * extended attribute used to store file's location. The location stored as a raw byte arrays ,
+   * where each nfs4_prot.NFS4_DEVICEID4_SIZE bytes represent a single deviceid.
+   */
+  private static final String PNFS_LOCATION_XATTR = "pnfs.location";
 
-    private final Map<deviceid4, DS> _deviceMap =
-            new ConcurrentHashMap<>();
+  private final Map<deviceid4, DS> _deviceMap = new ConcurrentHashMap<>();
 
-    // we need to return same layout stateid, as long as it's not returned
-    private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
+  // we need to return same layout stateid, as long as it's not returned
+  private final Map<stateid4, NFS4State> _openToLayoutStateid = new ConcurrentHashMap<>();
 
-    /**
-     * Zookeeper client.
-     */
-    private CuratorFramework zkCurator;
+  /** Zookeeper client. */
+  private CuratorFramework zkCurator;
 
-    /**
-     * Path cache to node with all on-line DSes.
-     */
-    private PathChildrenCache dsNodeCache;
+  /** Path cache to node with all on-line DSes. */
+  private PathChildrenCache dsNodeCache;
 
-    /**
-     * Layout type specific driver.
-     */
-    private final Map<layouttype4, LayoutDriver> _supportedDrivers;
+  /** Layout type specific driver. */
+  private final Map<layouttype4, LayoutDriver> _supportedDrivers;
 
-    // we use 'other' part of stateid as sequence number can change
-    private IMap<byte[], byte[]> mdsStateIdCache;
+  // we use 'other' part of stateid as sequence number can change
+  private IMap<byte[], byte[]> mdsStateIdCache;
 
-    @Autowired(required = false)
-    private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
+  @Autowired(required = false)
+  private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c, s) -> {};
 
-    private VirtualFileSystem fs;
+  private VirtualFileSystem fs;
 
-    private VfsCacheConfig cacheConfig;
+  private VfsCacheConfig cacheConfig;
 
-    private VirtualFileSystem innter;
+  private VirtualFileSystem innter;
 
-    public DeviceManager() {
-        _supportedDrivers = new EnumMap<>(layouttype4.class);
-    }
+  public DeviceManager() {
+    _supportedDrivers = new EnumMap<>(layouttype4.class);
+  }
 
-    public void setVfs(VirtualFileSystem fs) {
-        this.innter = fs;
-    }
+  public void setVfs(VirtualFileSystem fs) {
+    this.innter = fs;
+  }
 
-    public void setCacheConfig(VfsCacheConfig cacheConfig) {
-        this.cacheConfig = cacheConfig;
-    }
+  public void setCacheConfig(VfsCacheConfig cacheConfig) {
+    this.cacheConfig = cacheConfig;
+  }
 
-    public void setCuratorFramework(CuratorFramework curatorFramework) {
-        zkCurator = curatorFramework;
-    }
+  public void setCuratorFramework(CuratorFramework curatorFramework) {
+    zkCurator = curatorFramework;
+  }
 
-    public void setLayoutReturnConsumer(BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats) {
-        this.layoutStats = layoutStats;
-    }
+  public void setLayoutReturnConsumer(BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats) {
+    this.layoutStats = layoutStats;
+  }
 
-    public void setOpenStateidCache(IMap<byte[], byte[]> openStateIdCache) {
-        mdsStateIdCache = openStateIdCache;
-    }
+  public void setOpenStateidCache(IMap<byte[], byte[]> openStateIdCache) {
+    mdsStateIdCache = openStateIdCache;
+  }
 
-    public void init() throws Exception {
+  public void init() throws Exception {
 
-        fs = new VfsCache(innter, cacheConfig);
+    fs = new VfsCache(innter, cacheConfig);
 
-        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
-                flex_files_prot.FF_FLAGS_NO_IO_THRU_MDS,
-                new utf8str_mixed("17"), new utf8str_mixed("17"), layoutStats)
-        );
+    _supportedDrivers.put(
+        layouttype4.LAYOUT4_FLEX_FILES,
+        new FlexFileLayoutDriver(
+            4,
+            1,
+            flex_files_prot.FF_FLAGS_NO_IO_THRU_MDS,
+            new utf8str_mixed("17"),
+            new utf8str_mixed("17"),
+            layoutStats));
 
-        _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
+    _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
 
-        dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
-        dsNodeCache.getListenable().addListener((c, e) -> {
-
-            switch(e.getType()) {
+    dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
+    dsNodeCache
+        .getListenable()
+        .addListener(
+            (c, e) -> {
+              switch (e.getType()) {
                 case CHILD_ADDED:
                 case CHILD_UPDATED:
-                    _log.info("Adding DS: {}", e.getData().getPath());
-                    addDS(e.getData().getPath());
-                    break;
+                  _log.info("Adding DS: {}", e.getData().getPath());
+                  addDS(e.getData().getPath());
+                  break;
                 case CHILD_REMOVED:
-                    _log.info("Removing DS: {}", e.getData().getPath());
-                    removeDS(e.getData().getPath());
-                    break;
-            }
-        });
-        dsNodeCache.start();
+                  _log.info("Removing DS: {}", e.getData().getPath());
+                  removeDS(e.getData().getPath());
+                  break;
+              }
+            });
+    dsNodeCache.start();
+  }
 
+  public void shutdown() throws IOException {
+
+    dsNodeCache.close();
+  }
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutGet(CompoundContext context,
+   *              LAYOUTGET4args args)
+   */
+  @Override
+  public Layout layoutGet(CompoundContext context, LAYOUTGET4args args) throws IOException {
+
+    final NFS4Client client = context.getSession().getClient();
+    final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.loga_stateid);
+    final NFS4State nfsState = client.state(stateid);
+
+    Inode inode = context.currentInode();
+    layouttype4 layoutType = layouttype4.valueOf(args.loga_layout_type);
+    LayoutDriver layoutDriver = getLayoutDriver(layoutType);
+
+    deviceid4[] deviceId = getOrBindDeviceId(inode, args.loga_iomode, layoutType);
+
+    NFS4State openState = nfsState.getOpenState();
+    final stateid4 rawOpenState = openState.stateid();
+
+    NFS4State layoutStateId = _openToLayoutStateid.get(rawOpenState);
+    if (layoutStateId == null) {
+      layoutStateId = client.createState(openState.getStateOwner(), openState);
+      _openToLayoutStateid.put(stateid, layoutStateId);
+      mdsStateIdCache.put(rawOpenState.other, context.currentInode().toNfsHandle());
+      nfsState.addDisposeListener(
+          state -> {
+            _openToLayoutStateid.remove(rawOpenState);
+            mdsStateIdCache.remove(rawOpenState.other);
+          });
+    }
+    layoutStateId.bumpSeqid();
+
+    nfs_fh4 fh = new nfs_fh4(context.currentInode().toNfsHandle());
+
+    //  -1 is special value, which means entire file
+    layout4 layout = new layout4();
+    layout.lo_iomode = args.loga_iomode;
+    layout.lo_offset = new offset4(0);
+    layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
+    layout.lo_content =
+        layoutDriver.getLayoutContent(rawOpenState, NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
+
+    return new Layout(true, layoutStateId.stateid(), new layout4[] {layout});
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceInfo(CompoundContext context,
+   *             GETDEVICEINFO4args args)
+   */
+  @Override
+  public device_addr4 getDeviceInfo(CompoundContext context, GETDEVICEINFO4args args)
+      throws ChimeraNFSException {
+
+    deviceid4 deviceId = args.gdia_device_id;
+    layouttype4 layoutType = layouttype4.valueOf(args.gdia_layout_type);
+
+    _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
+
+    DS ds = _deviceMap.get(deviceId);
+    if (ds == null) {
+      throw new NoEntException("Unknown device id: " + deviceId);
     }
 
-    public void shutdown() throws IOException {
+    InetSocketAddress[] addrs = ds.getMultipathAddresses();
 
-        dsNodeCache.close();
+    // limit addresses returned to client to the same 'type' as clients own address
+    InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
+    InetSocketAddress[] effectiveAddresses =
+        Stream.of(addrs)
+            .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
+            .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
+            .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
+            .toArray(InetSocketAddress[]::new);
+
+    LayoutDriver layoutDriver = getLayoutDriver(layoutType);
+    return layoutDriver.getDeviceAddress(effectiveAddresses);
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceList(CompoundContext context,
+   *             GETDEVICELIST4args args)
+   */
+  @Override
+  public List<deviceid4> getDeviceList(CompoundContext context, GETDEVICELIST4args args) {
+    return new ArrayList<>(_deviceMap.keySet());
+  }
+
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn(CompoundContext context,
+   *             LAYOUTRETURN4args args)
+   */
+  @Override
+  public void layoutReturn(CompoundContext context, LAYOUTRETURN4args args)
+      throws ChimeraNFSException {
+
+    if (args.lora_layoutreturn.lr_returntype == layoutreturn_type4.LAYOUTRETURN4_FILE) {
+      final stateid4 stateid =
+          Stateids.getCurrentStateidIfNeeded(context, args.lora_layoutreturn.lr_layout.lrf_stateid);
+      layouttype4 layoutType = layouttype4.valueOf(args.lora_layout_type);
+      _log.debug("release device for stateid {}", stateid);
+      final NFS4Client client = context.getSession().getClient();
+      final NFS4State layoutState = client.state(stateid);
+      _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
+      getLayoutDriver(layoutType)
+          .acceptLayoutReturnData(context, args.lora_layoutreturn.lr_layout.lrf_body);
     }
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutGet(CompoundContext context,
-     *              LAYOUTGET4args args)
-     */
-    @Override
-    public Layout layoutGet(CompoundContext context, LAYOUTGET4args args)
-            throws IOException {
+  }
 
-        final NFS4Client client = context.getSession().getClient();
-        final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.loga_stateid);
-        final NFS4State nfsState = client.state(stateid);
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutCommit(CompoundContext context,
+   *             LAYOUTCOMMIT4args args)
+   */
+  @Override
+  public OptionalLong layoutCommit(CompoundContext context, LAYOUTCOMMIT4args args)
+      throws IOException {
 
-        Inode inode = context.currentInode();
-        layouttype4 layoutType = layouttype4.valueOf(args.loga_layout_type);
-        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
+    Inode inode = context.currentInode();
+    if (args.loca_last_write_offset.no_newoffset) {
+      Stat stat = fs.getattr(inode);
+      long currentSize = stat.getSize();
+      long newSize = args.loca_last_write_offset.no_offset.value + 1;
+      if (newSize > currentSize) {
+        Stat newStat = new Stat();
+        newStat.setSize(newSize);
+        fs.setattr(inode, newStat);
+        return OptionalLong.of(newSize);
+      }
+    }
+    return OptionalLong.empty();
+  }
 
-        deviceid4[] deviceId = getOrBindDeviceId(inode, args.loga_iomode, layoutType);
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutStats(CompoundContext context,
+   *             LAYOUTSTATS4args args)
+   */
 
-        NFS4State openState = nfsState.getOpenState();
-        final stateid4 rawOpenState = openState.stateid();
+  @Override
+  public void layoutStats(CompoundContext contex, LAYOUTSTATS4args args) throws IOException {
+    // NOP
+  }
 
-        NFS4State layoutStateId = _openToLayoutStateid.get(rawOpenState);
-        if(layoutStateId == null) {
-            layoutStateId = client.createState(openState.getStateOwner(), openState);
-            _openToLayoutStateid.put(stateid, layoutStateId);
-            mdsStateIdCache.put(rawOpenState.other, context.currentInode().toNfsHandle());
-            nfsState.addDisposeListener(
-                    state -> {
-                        _openToLayoutStateid.remove(rawOpenState);
-                        mdsStateIdCache.remove(rawOpenState.other);
-                    }
-            );
-        }
-        layoutStateId.bumpSeqid();
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutError(CompoundContext context,
+   *             LAYOUTERROR4args args)
+   */
+  @Override
+  public void layoutError(CompoundContext contex, LAYOUTERROR4args args) throws IOException {
+    // NOP
+  }
 
-        nfs_fh4 fh = new nfs_fh4(context.currentInode().toNfsHandle());
+  private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
+    LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
+    if (layoutDriver == null) {
+      throw new UnknownLayoutTypeException("Unsupported Layout type: " + layoutType);
+    }
+    return layoutDriver;
+  }
 
-        //  -1 is special value, which means entire file
-        layout4 layout = new layout4();
-        layout.lo_iomode = args.loga_iomode;
-        layout.lo_offset = new offset4(0);
-        layout.lo_length = new length4(nfs4_prot.NFS4_UINT64_MAX);
-        layout.lo_content = layoutDriver.getLayoutContent(rawOpenState,  NFSv4Defaults.NFS4_STRIPE_SIZE, fh, deviceId);
+  /*
+   * (non-Javadoc)
+   *
+   * @see org.dcache.nfsv4.NFSv41DeviceManager#getLayoutTypes()
+   */
+  @Override
+  public Set<layouttype4> getLayoutTypes() {
+    return _supportedDrivers.keySet();
+  }
 
-        return  new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
+  private void addDS(String node) throws Exception {
+    byte[] data = zkCurator.getData().forPath(node);
+    Mirror mirror = ZkDataServer.stringToString(data);
+
+    DS ds = new DS(mirror);
+    _deviceMap.put(deviceidOf(mirror.getId()), ds);
+  }
+
+  private void removeDS(String node) throws Exception {
+    String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+    UUID deviceId = UUID.fromString(id);
+    DS ds = _deviceMap.remove(deviceidOf(deviceId));
+    if (ds != null) {
+      ds.shutdown();
+    }
+  }
+
+  /**
+   * Returns an array of device ids associated with the file. If binding between {@code inode} and
+   * devices doesn't exists, then such binding is established.
+   *
+   * @param inode inode of the file
+   * @return array of device ids.
+   */
+  private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
+
+    try {
+      byte[] combinedLocation = fs.getXattr(inode, PNFS_LOCATION_XATTR);
+
+      deviceid4[] deviceid4s =
+          new deviceid4[combinedLocation.length / nfs4_prot.NFS4_DEVICEID4_SIZE];
+
+      for (int i = 0; i < deviceid4s.length; i++) {
+        byte[] id =
+            Arrays.copyOfRange(
+                combinedLocation,
+                i * nfs4_prot.NFS4_DEVICEID4_SIZE,
+                (i + 1) * nfs4_prot.NFS4_DEVICEID4_SIZE);
+        deviceid4s[i] = new deviceid4(id);
+      }
+
+      return deviceid4s;
+    } catch (NoXattrException e) {
+      return new deviceid4[0];
+    }
+  }
+
+  /**
+   * Returns an array of device ids associated with the file. If binding between {@code inode} and
+   * devices doesn't exists, then such binding is established.
+   *
+   * @param inode inode of the file
+   * @param iomode layout's IO mode
+   * @param layoutType layout type for which device id is required
+   * @return array of device ids.
+   */
+  private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType)
+      throws ChimeraNFSException, IOException {
+
+    // independent from read or write, check existing location first
+    deviceid4[] deviceId = getBoundDeviceId(inode);
+    if (deviceId.length == 0) {
+
+      // on read, we always expect a location
+      if (iomode == layoutiomode4.LAYOUTIOMODE4_READ) {
+        throw new LayoutTryLaterException("No location");
+      }
+
+      int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
+      deviceId = _deviceMap.keySet().stream().unordered().limit(mirrors).toArray(deviceid4[]::new);
+
+      if (deviceId.length == 0) {
+        throw new LayoutTryLaterException("No dataservers available");
+      }
+
+      byte[] id = new byte[deviceId.length * nfs4_prot.NFS4_DEVICEID4_SIZE];
+      for (int i = 0; i < deviceId.length; i++) {
+        System.arraycopy(
+            deviceId[i].value,
+            0,
+            id,
+            i * nfs4_prot.NFS4_DEVICEID4_SIZE,
+            nfs4_prot.NFS4_DEVICEID4_SIZE);
+      }
+
+      try {
+        fs.setXattr(inode, PNFS_LOCATION_XATTR, id, SetXattrMode.CREATE);
+      } catch (ExistException e) {
+        // we fail, as other location is set. try again
+        return getOrBindDeviceId(inode, iomode, layoutType);
+      }
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceInfo(CompoundContext context,
-     *             GETDEVICEINFO4args args)
-     */
-    @Override
-    public device_addr4 getDeviceInfo(CompoundContext context, GETDEVICEINFO4args args) throws ChimeraNFSException {
+    return deviceId;
+  }
 
-        deviceid4 deviceId = args.gdia_device_id;
-        layouttype4 layoutType = layouttype4.valueOf(args.gdia_layout_type);
+  @Override
+  public void setattr(Inode inode, Stat stat) throws IOException {
+    if (stat.isDefined(Stat.StatAttribute.SIZE)) {
+      deviceid4[] ids =
+          getOrBindDeviceId(
+              inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_NFSV4_1_FILES);
 
-        _log.debug("lookup for device: {}, type: {}", deviceId, layoutType);
-
-        DS ds = _deviceMap.get(deviceId);
+      for (deviceid4 id : ids) {
+        DS ds = _deviceMap.get(id);
         if (ds == null) {
-            throw new NoEntException("Unknown device id: " + deviceId);
+          _log.warn("No such DS: {}", id);
+          throw new DelayException("Not all data servers online");
         }
 
-        InetSocketAddress[] addrs = ds.getMultipathAddresses();
+        ds.setFileSize(inode, stat.getSize());
+      }
+    }
+    delegate().setattr(inode, stat);
+  }
 
-        // limit addresses returned to client to the same 'type' as clients own address
-        InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
-        InetSocketAddress[] effectiveAddresses = Stream.of(addrs)
-                .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
-                .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
-                .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
-                .toArray(InetSocketAddress[]::new);
+  @Override
+  public void remove(Inode parent, String nanme) throws IOException {
 
-        LayoutDriver layoutDriver = getLayoutDriver(layoutType);
-        return layoutDriver.getDeviceAddress(effectiveAddresses);
+    Inode inode = lookup(parent, nanme);
+    for (deviceid4 id : getBoundDeviceId(inode)) {
+      DS ds = _deviceMap.get(id);
+      if (ds == null) {
+        _log.warn("No such DS: {}", id);
+        throw new DelayException("Not all data servers online");
+      }
+
+      ds.removeFile(inode);
+    }
+    super.remove(parent, nanme);
+  }
+
+  @Override
+  protected VirtualFileSystem delegate() {
+    return fs;
+  }
+
+  private static class DS {
+
+    DS(Mirror mirror) {
+      addr = mirror.getMultipath();
+      channel =
+          ManagedChannelBuilder.forAddress(
+                  mirror.getBepAddress()[0].getAddress().getHostAddress(),
+                  mirror.getBepAddress()[0].getPort())
+              .usePlaintext() // disable SSL
+              .build();
+
+      blockingStub = DataServerBepServiceGrpc.newBlockingStub(channel);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#getDeviceList(CompoundContext context,
-     *             GETDEVICELIST4args args)
-     */
-    @Override
-    public List<deviceid4> getDeviceList(CompoundContext context, GETDEVICELIST4args args) {
-        return new ArrayList<>(_deviceMap.keySet());
+    // gRPC channel and co.
+    private final ManagedChannel channel;
+    private final DataServerBepServiceGrpc.DataServerBepServiceBlockingStub blockingStub;
+    private final InetSocketAddress[] addr;
+
+    void setFileSize(Inode inode, long size) throws ChimeraNFSException {
+
+      SetFileSizeRequest request =
+          SetFileSizeRequest.newBuilder()
+              .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+              .setSize(size)
+              .build();
+
+      SetFileSizeResponse response = blockingStub.setFileSize(request);
+      nfsstat.throwIfNeeded(response.getStatus());
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutReturn(CompoundContext context,
-     *             LAYOUTRETURN4args args)
-     */
-    @Override
-    public void layoutReturn(CompoundContext context, LAYOUTRETURN4args args) throws ChimeraNFSException {
+    void removeFile(Inode inode) throws ChimeraNFSException {
 
-        if (args.lora_layoutreturn.lr_returntype == layoutreturn_type4.LAYOUTRETURN4_FILE) {
-            final stateid4 stateid = Stateids.getCurrentStateidIfNeeded(context, args.lora_layoutreturn.lr_layout.lrf_stateid);
-            layouttype4 layoutType = layouttype4.valueOf(args.lora_layout_type);
-            _log.debug("release device for stateid {}", stateid);
-            final NFS4Client client = context.getSession().getClient();
-            final NFS4State layoutState = client.state(stateid);
-            _openToLayoutStateid.remove(layoutState.getOpenState().stateid());
-            getLayoutDriver(layoutType).acceptLayoutReturnData(context, args.lora_layoutreturn.lr_layout.lrf_body);
-        }
+      RemoveFileRequest request =
+          RemoveFileRequest.newBuilder().setFh(ByteString.copyFrom(inode.toNfsHandle())).build();
+
+      RemoveFileResponse response = blockingStub.removeFile(request);
+      nfsstat.throwIfNeeded(response.getStatus());
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutCommit(CompoundContext context,
-     *             LAYOUTCOMMIT4args args)
-     */
-    @Override
-    public OptionalLong layoutCommit(CompoundContext context, LAYOUTCOMMIT4args args) throws IOException {
-
-        Inode inode = context.currentInode();
-        if (args.loca_last_write_offset.no_newoffset) {
-            Stat stat = fs.getattr(inode);
-            long currentSize = stat.getSize();
-            long newSize = args.loca_last_write_offset.no_offset.value + 1;
-            if (newSize > currentSize) {
-                Stat newStat = new Stat();
-                newStat.setSize(newSize);
-                fs.setattr(inode, newStat);
-                return OptionalLong.of(newSize);
-            }
-        }
-        return OptionalLong.empty();
+    InetSocketAddress[] getMultipathAddresses() {
+      return addr;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutStats(CompoundContext context,
-     *             LAYOUTSTATS4args args)
-     */
-
-    @Override
-    public void layoutStats(CompoundContext contex, LAYOUTSTATS4args args) throws IOException {
-        // NOP
+    public void shutdown() {
+      channel.shutdown();
     }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#layoutError(CompoundContext context,
-     *             LAYOUTERROR4args args)
-     */
-    @Override
-    public void layoutError(CompoundContext contex, LAYOUTERROR4args args) throws IOException {
-        // NOP
-    }
-
-    private LayoutDriver getLayoutDriver(layouttype4 layoutType) throws UnknownLayoutTypeException {
-        LayoutDriver layoutDriver = _supportedDrivers.get(layoutType);
-        if (layoutDriver == null) {
-            throw new UnknownLayoutTypeException("Unsupported Layout type: " + layoutType);
-        }
-        return layoutDriver;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.dcache.nfsv4.NFSv41DeviceManager#getLayoutTypes()
-     */
-    @Override
-    public Set<layouttype4> getLayoutTypes() {
-        return _supportedDrivers.keySet();
-    }
-
-    private void addDS(String node) throws Exception {
-        byte[] data = zkCurator.getData().forPath(node);
-        Mirror mirror = ZkDataServer.stringToString(data);
-
-        DS ds = new DS(mirror);
-        _deviceMap.put(deviceidOf(mirror.getId()), ds);
-    }
-
-    private void removeDS(String node) throws Exception {
-        String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
-        UUID deviceId = UUID.fromString(id);
-        DS ds = _deviceMap.remove(deviceidOf(deviceId));
-        if (ds != null) {
-            ds.shutdown();
-        }
-    }
-
-    /**
-     * Returns an array of device ids associated with the file. If
-     * binding between {@code inode} and devices doesn't exists, then such binding
-     * is established.
-     * @param inode inode of the file
-     * @return array of device ids.
-     */
-    private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
-
-        try {
-            byte[] combinedLocation = fs.getXattr(inode, PNFS_LOCATION_XATTR);
-
-            deviceid4[] deviceid4s = new deviceid4[combinedLocation.length/nfs4_prot.NFS4_DEVICEID4_SIZE];
-
-            for(int i = 0; i < deviceid4s.length; i++) {
-                byte[] id = Arrays.copyOfRange(combinedLocation,
-                        i*nfs4_prot.NFS4_DEVICEID4_SIZE,
-                        (i+1)*nfs4_prot.NFS4_DEVICEID4_SIZE);
-                deviceid4s[i] = new deviceid4(id);
-            }
-
-            return deviceid4s;
-        } catch (NoXattrException e) {
-            return new deviceid4[0];
-        }
-    }
-
-
-    /**
-     * Returns an array of device ids associated with the file. If
-     * binding between {@code inode} and devices doesn't exists, then such binding
-     * is established.
-     * @param inode inode of the file
-     * @param iomode layout's IO mode
-     * @param layoutType layout type for which device id is required
-     * @return array of device ids.
-     */
-    private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType) throws ChimeraNFSException, IOException {
-
-        // independent from read or write, check existing location first
-        deviceid4[] deviceId = getBoundDeviceId(inode);
-        if (deviceId.length == 0) {
-
-            // on read, we always expect a location
-            if (iomode == layoutiomode4.LAYOUTIOMODE4_READ) {
-                throw new LayoutTryLaterException("No location");
-            }
-
-            int mirrors = layoutType == layouttype4.LAYOUT4_FLEX_FILES ? 2 : 1;
-            deviceId = _deviceMap.keySet().stream()
-                    .unordered()
-                    .limit(mirrors)
-                    .toArray(deviceid4[]::new);
-
-            if (deviceId.length == 0) {
-                throw new LayoutTryLaterException("No dataservers available");
-            }
-
-
-            byte[] id = new byte[deviceId.length*nfs4_prot.NFS4_DEVICEID4_SIZE];
-            for(int i = 0; i < deviceId.length; i++ ) {
-                System.arraycopy(deviceId[i].value, 0, id, i*nfs4_prot.NFS4_DEVICEID4_SIZE, nfs4_prot.NFS4_DEVICEID4_SIZE);
-            }
-
-            try {
-                fs.setXattr(inode, PNFS_LOCATION_XATTR, id, SetXattrMode.CREATE);
-            } catch (ExistException e) {
-                // we fail, as other location is set. try again
-                return getOrBindDeviceId(inode, iomode, layoutType);
-            }
-        }
-
-        return deviceId;
-    }
-
-    @Override
-    public void setattr(Inode inode, Stat stat) throws IOException {
-        if (stat.isDefined(Stat.StatAttribute.SIZE)) {
-            deviceid4[] ids = getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_NFSV4_1_FILES);
-
-            for (deviceid4 id : ids) {
-                DS ds = _deviceMap.get(id);
-                if (ds == null) {
-                    _log.warn("No such DS: {}", id);
-                    throw new DelayException("Not all data servers online");
-                }
-
-                ds.setFileSize(inode, stat.getSize());
-            }
-        }
-        delegate().setattr(inode, stat);
-    }
-
-    @Override
-    public void remove(Inode parent, String nanme) throws IOException {
-
-        Inode inode = lookup(parent, nanme);
-        for (deviceid4 id : getBoundDeviceId(inode)) {
-            DS ds = _deviceMap.get(id);
-            if (ds == null) {
-                _log.warn("No such DS: {}", id);
-                throw new DelayException("Not all data servers online");
-            }
-
-            ds.removeFile(inode);
-        }
-        super.remove(parent, nanme);
-    }
-
-    @Override
-    protected VirtualFileSystem delegate() {
-        return fs;
-    }
-
-    private static class DS {
-
-        DS(Mirror mirror) {
-            addr = mirror.getMultipath();
-            channel = ManagedChannelBuilder
-                    .forAddress(mirror.getBepAddress()[0].getAddress().getHostAddress(), mirror.getBepAddress()[0].getPort())
-                    .usePlaintext() // disable SSL
-                    .build();
-
-            blockingStub = DataServerBepServiceGrpc
-                    .newBlockingStub(channel);
-        }
-
-        // gRPC channel and co.
-        private final ManagedChannel channel;
-        private final DataServerBepServiceGrpc.DataServerBepServiceBlockingStub blockingStub;
-        private final InetSocketAddress[] addr;
-
-
-        void setFileSize(Inode inode, long size) throws ChimeraNFSException {
-
-            SetFileSizeRequest request = SetFileSizeRequest.newBuilder()
-                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
-                    .setSize(size)
-                    .build();
-
-            SetFileSizeResponse response = blockingStub.setFileSize(request);
-            nfsstat.throwIfNeeded(response.getStatus());
-        }
-
-        void removeFile(Inode inode) throws ChimeraNFSException {
-
-            RemoveFileRequest request = RemoveFileRequest.newBuilder()
-                    .setFh(ByteString.copyFrom(inode.toNfsHandle()))
-                    .build();
-
-            RemoveFileResponse response = blockingStub.removeFile(request);
-            nfsstat.throwIfNeeded(response.getStatus());
-        }
-
-        InetSocketAddress[] getMultipathAddresses() {
-            return addr;
-        }
-
-        public void shutdown() {
-            channel.shutdown();
-        }
-
-    }
-
+  }
 }
