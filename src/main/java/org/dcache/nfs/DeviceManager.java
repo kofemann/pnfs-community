@@ -31,6 +31,8 @@ import org.dcache.nfs.v4.xdr.nfs_fh4;
 import org.dcache.nfs.v4.xdr.deviceid4;
 import org.dcache.nfs.v4.xdr.nfs4_prot;
 import org.dcache.nfs.v4.xdr.device_addr4;
+import org.dcache.nfs.vfs.VfsCache;
+import org.dcache.nfs.vfs.VfsCacheConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +59,6 @@ import org.dcache.nfs.bep.RemoveFileRequest;
 import org.dcache.nfs.bep.RemoveFileResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
-import org.dcache.nfs.chimera.ChimeraVfs;
 import org.dcache.nfs.status.DelayException;
 import org.dcache.nfs.status.LayoutTryLaterException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
@@ -89,7 +90,6 @@ import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.ForwardingFileSystem;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
-import org.dcache.nfs.vfs.VfsCache;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
@@ -141,20 +141,22 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     @Autowired(required = false)
     private BiConsumer<CompoundContext, ff_layoutreturn4> layoutStats = (c,s) -> {};
 
-    private ChimeraVfs fs;
-    // FIXME: we don't need cache and non cache version at the same time
-    private VfsCache fsCache;
+    private VirtualFileSystem fs;
+
+    private VfsCacheConfig cacheConfig;
+
+    private VirtualFileSystem innter;
 
     public DeviceManager() {
         _supportedDrivers = new EnumMap<>(layouttype4.class);
     }
 
-    public void setChimeraVfs(ChimeraVfs fs) {
-        this.fs = fs;
+    public void setVfs(VirtualFileSystem fs) {
+        this.innter = fs;
     }
 
-    public void setVfs(VfsCache fs) {
-        this.fsCache = fs;
+    public void setCacheConfig(VfsCacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
     }
 
     public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -170,6 +172,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     }
 
     public void init() throws Exception {
+
+        fs = new VfsCache(innter, cacheConfig);
 
         _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES, new FlexFileLayoutDriver(4, 1,
                 flex_files_prot.FF_FLAGS_NO_IO_THRU_MDS,
@@ -332,7 +336,6 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
                 Stat newStat = new Stat();
                 newStat.setSize(newSize);
                 fs.setattr(inode, newStat);
-                fsCache.invalidateStatCache(inode);
                 return OptionalLong.of(newSize);
             }
         }
