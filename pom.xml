@@ -42,7 +42,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <version.hazelcast>4.0.1</version.hazelcast>
-        <version.curator>4.3.0</version.curator>
+        <version.curator>5.1.0</version.curator>
         <version.grpc>1.27.1</version.grpc>
         <spring-integration-kafka.version>3.3.1.RELEASE</spring-integration-kafka.version>
         <spring-kafka.version>2.5.4.RELEASE</spring-kafka.version>
