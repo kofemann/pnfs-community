@@ -21,6 +21,7 @@ package org.dcache.nfs.chimera;
 
 import org.dcache.chimera.*;
 import org.dcache.nfs.status.*;
+import org.dcache.nfs.util.UnixSubjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ import org.dcache.acl.ACE;
 import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.AceType;
 import org.dcache.acl.enums.Who;
-import org.dcache.auth.Subjects;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.nfs.v4.acl.Acls;
@@ -97,8 +97,8 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
   @Override
   public Inode create(Inode parent, Stat.Type type, String path, Subject subject, int mode)
       throws IOException {
-    int uid = (int) Subjects.getUid(subject);
-    int gid = (int) Subjects.getPrimaryGid(subject);
+    int uid = (int) UnixSubjects.getUid(subject);
+    int gid = (int) UnixSubjects.getPrimaryGid(subject);
     try {
       FsInode parentFsInode = toFsInode(parent);
       FsInode fsInode =
@@ -112,8 +112,8 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
 
   @Override
   public Inode mkdir(Inode parent, String path, Subject subject, int mode) throws IOException {
-    int uid = (int) Subjects.getUid(subject);
-    int gid = (int) Subjects.getPrimaryGid(subject);
+    int uid = (int) UnixSubjects.getUid(subject);
+    int gid = (int) UnixSubjects.getPrimaryGid(subject);
     try {
       FsInode parentFsInode = toFsInode(parent);
       FsInode fsInode = parentFsInode.mkdir(path, uid, gid, mode);
@@ -140,8 +140,8 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
   @Override
   public Inode symlink(Inode parent, String path, String link, Subject subject, int mode)
       throws IOException {
-    int uid = (int) Subjects.getUid(subject);
-    int gid = (int) Subjects.getPrimaryGid(subject);
+    int uid = (int) UnixSubjects.getUid(subject);
+    int gid = (int) UnixSubjects.getPrimaryGid(subject);
     try {
       FsInode parentFsInode = toFsInode(parent);
       FsInode fsInode =
@@ -508,10 +508,10 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
       Who who = ace.getWho();
 
       if ((who == Who.EVERYONE)
-          || (who == Who.OWNER && Subjects.hasUid(subject, owner))
-          || (who == Who.OWNER_GROUP && Subjects.hasGid(subject, group))
-          || (who == Who.GROUP && Subjects.hasGid(subject, ace.getWhoID()))
-          || (who == Who.USER && Subjects.hasUid(subject, ace.getWhoID()))) {
+          || (who == Who.OWNER && UnixSubjects.hasUid(subject, owner))
+          || (who == Who.OWNER_GROUP && UnixSubjects.hasGid(subject, group))
+          || (who == Who.GROUP && UnixSubjects.hasGid(subject, ace.getWhoID()))
+          || (who == Who.USER && UnixSubjects.hasUid(subject, ace.getWhoID()))) {
 
         if (ace.getType() == AceType.ACCESS_DENIED_ACE_TYPE) {
           return Access.DENY;

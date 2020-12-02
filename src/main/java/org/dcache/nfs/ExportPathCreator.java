@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2019 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2020 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -21,8 +21,8 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import java.io.IOException;
-import org.dcache.auth.Subjects;
 import org.dcache.nfs.status.NoEntException;
+import org.dcache.nfs.util.UnixSubjects;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class ExportPathCreator {
     try {
       return vfs.lookup(inode, name);
     } catch (NoEntException e) {
-      return vfs.mkdir(inode, name, Subjects.ROOT, 0777);
+      return vfs.mkdir(inode, name, UnixSubjects.toSubject(0, 0), 0777);
     }
   }
 
