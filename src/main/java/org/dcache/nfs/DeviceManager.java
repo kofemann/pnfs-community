@@ -167,6 +167,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
             4,
             1,
             flex_files_prot.FF_FLAGS_NO_IO_THRU_MDS,
+            1048576, // 1MB
             new utf8str_mixed("17"),
             new utf8str_mixed("17"),
             layoutStats));
