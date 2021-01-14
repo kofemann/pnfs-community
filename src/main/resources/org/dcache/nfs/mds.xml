@@ -169,7 +169,7 @@
         <constructor-arg ref="oncrpcsvc-builder"/>
         <property name="programs">
             <map>
-                <entry key-ref="nfsv4-programm" value-ref="mds"/>
+                <entry key-ref="nfsv4-program" value-ref="mds"/>
             </map>
         </property>
     </bean>
