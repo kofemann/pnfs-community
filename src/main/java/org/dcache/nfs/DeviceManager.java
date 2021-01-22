@@ -269,12 +269,13 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     InetSocketAddress[] addrs = ds.getMultipathAddresses();
 
     // limit addresses returned to client to the same 'type' as clients own address
+    // NOTICE: according to rfc1918 we allow access to private networks from public ip address
+    // Site must take care that private IP space is not visible to site external clients.
     InetAddress clientAddress = context.getRemoteSocketAddress().getAddress();
     InetSocketAddress[] effectiveAddresses =
         Stream.of(addrs)
             .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
             .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
-            .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
             .toArray(InetSocketAddress[]::new);
 
     LayoutDriver layoutDriver = getLayoutDriver(layoutType);
