@@ -13,4 +13,4 @@ fi
 
 exec /usr/bin/java -server \
 	${JAVA_OPT} ${JMX} ${JAVA_ARGS} \
-	-cp "/pnfs/jars/*" org.dcache.nfs.Main "$@"
+	-cp "/usr/share/pnfs/jars/*" org.dcache.nfs.Main "$@"

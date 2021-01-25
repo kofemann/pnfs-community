@@ -77,9 +77,9 @@ services:
     - "2049:2049"
     - "127.0.0.1:7777:7777"
     volumes:
-    - ./exports:/pnfs/etc/exports
-    - ./nfs.properties:/pnfs/etc/nfs.properties
-    - ./chimera.properties:/pnfs/etc/chimera.properties
+    - ./exports:/etc/pnfs/exports
+    - ./nfs.properties:/etc/pnfs/nfs.properties
+    - ./chimera.properties:/etc/pnfs/chimera.properties
     - ./hostkey.pem:/hostkey.pem
     - ./hostcert.pem:/hostcert.pem
     - ./ca-chain.pem:/ca-chain.pem

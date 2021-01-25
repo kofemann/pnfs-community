@@ -11,18 +11,18 @@ COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
 # where we store the data
-RUN mkdir -p /pnfs/data /pnfs/db /pnfs/etc  /pnfs/state
+RUN mkdir -p /var/lib/pnfs/data /var/lib/pnfs/db /var/lib/pnfs/state /usr/share/pnfs /etc/pnfs
 
 # adjust permissions
-RUN chown -R pnfs:pnfs /pnfs
+RUN chown -R pnfs:pnfs /var/lib/pnfs /etc/pnfs
 
 # Add JARS
-COPY maven /pnfs/jars
+COPY maven /usr/share/pnfs/jars
 
 # expose TCP ports for network services
 EXPOSE 2049 2052
 
-VOLUME /pnfs
+VOLUME /var/lib/pnfs
 
 # run as user pnfs
 USER pnfs

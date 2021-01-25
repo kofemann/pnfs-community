@@ -15,8 +15,8 @@
     <bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
         <property name="locations">
             <list>
-                <value>file:///pnfs/etc/nfs.properties</value>
-                <value>file:///pnfs/etc/chimera.properties</value>
+                <value>file:///etc/pnfs/nfs.properties</value>
+                <value>file:///etc/pnfs/chimera.properties</value>
             </list>
         </property>
         <property name="environment">
@@ -92,7 +92,7 @@
         <description>Export file</description>
         <constructor-arg>
             <bean class="java.io.File">
-                <constructor-arg value="/pnfs/etc/exports"/>
+                <constructor-arg value="/etc/pnfs/exports"/>
             </bean>
         </constructor-arg>
     </bean>

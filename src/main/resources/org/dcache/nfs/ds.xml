@@ -24,7 +24,7 @@
 
     <!-- create data directory for DS -->
     <bean id="ds-data-dir" class="java.io.File" init-method="mkdirs">
-        <constructor-arg value="/pnfs/data" />
+        <constructor-arg value="/var/lib/pnfs/data" />
     </bean>
 
     <bean id="ds-data-pool" class="org.dcache.nfs.IoChannelCache" init-method="init">
@@ -83,7 +83,7 @@
         <description>Data Server</description>
         <property name="curatorFramework" ref="zk-curator" />
         <property name="ioChannelCache" ref="ds-data-pool" />
-        <property name="idFile" value="/pnfs/etc/ds-id" />
+        <property name="idFile" value="/var/lib/pnfs/data/ds-id" />
         <property name="port" value="${NFS_PORT}" />
         <property name="bepSocket" value="${BEP_PORT}" />
     </bean>
@@ -94,7 +94,7 @@
         <bean id="gss-manager" class="org.dcache.oncrpc4j.rpc.gss.GssSessionManager">
             <constructor-arg index="0" ref="rpc-login-service" />
             <constructor-arg index="1" value="${KRB5_SVC_PRINCIPAL}" />
-            <constructor-arg index="2" value="/pnfs/etc/krb5.keytab" />
+            <constructor-arg index="2" value="/etc/pnfs/krb5.keytab" />
         </bean>
     </beans>
 
