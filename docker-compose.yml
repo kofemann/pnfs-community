@@ -104,7 +104,7 @@ services:
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
     - NFS_PORT=2052
-    - BEP_PORT=2017
+    - BEP_PORT=ds1:2017
     command: ds
     ports:
     - "2052:2052"
@@ -133,7 +133,7 @@ services:
     - ZOOKEEPER_CONNECT=zk:2181
     - HAZELCAST_HOST=hz
     - NFS_PORT=2053
-    - BEP_PORT=2017
+    - BEP_PORT=ds2:2017
     command: ds
     ports:
     - "2053:2053"

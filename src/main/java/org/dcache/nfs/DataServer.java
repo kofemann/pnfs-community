@@ -2,9 +2,11 @@ package org.dcache.nfs;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.file.FileAlreadyExistsException;
@@ -18,6 +20,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
+import org.dcache.oncrpc4j.rpc.net.InetSocketAddresses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +33,7 @@ public class DataServer {
 
   private CuratorFramework zkCurator;
   private int port;
-  private int bepPort;
+  private String bepSocket;
   private InetSocketAddress[] localInetAddresses;
   private String zkNode;
 
@@ -38,8 +41,8 @@ public class DataServer {
   private String idFile;
   private BackendServer bepSrv;
 
-  public void setBepPort(int port) {
-    this.bepPort = port;
+  public void setBepSocket(String socket) {
+    this.bepSocket = socket;
   }
 
   public void setCuratorFramework(CuratorFramework curatorFramework) {
@@ -53,11 +56,19 @@ public class DataServer {
   public void init() throws Exception {
     localInetAddresses = getLocalOrConfiguredAddresses(port);
 
-    bepSrv = new BackendServer(bepPort, fsc);
-    InetSocketAddress[] bep = getLocalAddresses(bepPort);
+    InetSocketAddress bepSocketAddress;
+    int i = bepSocket.lastIndexOf(':');
+    if (i==-1) {
+      bepSocketAddress = new InetSocketAddress(Integer.parseInt(bepSocket));
+    } else {
+      HostAndPort hp = HostAndPort.fromString(bepSocket);
+      bepSocketAddress = new InetSocketAddress(hp.getHost(), hp.getPort());
+    }
+
+    bepSrv = new BackendServer(bepSocketAddress, fsc);
 
     UUID myId = getOrAllocateId(idFile);
-    Mirror mirror = new Mirror(myId, localInetAddresses, bep);
+    Mirror mirror = new Mirror(myId, localInetAddresses, bepSocketAddress);
     zkNode =
         zkCurator
             .create()

@@ -20,11 +20,12 @@ public class ZkDataServer {
       a.put(InetSocketAddresses.uaddrOf(addr));
     }
     o.put("address", a);
+
+    // express as an array
     JSONArray b = new JSONArray();
-    for (InetSocketAddress addr : mirror.getBepAddress()) {
-      b.put(InetSocketAddresses.uaddrOf(addr));
-    }
+    b.put(InetSocketAddresses.uaddrOf(mirror.getBepAddress()));
     o.put("bep", b);
+
     o.put("deviceid", mirror.getId().toString());
 
     return o.toString().getBytes(UTF_8);
@@ -40,11 +41,12 @@ public class ZkDataServer {
     for (int i = 0; i < addrs.length; i++) {
       addrs[i] = InetSocketAddresses.forUaddrString(a.getString(i));
     }
+    // expressed as an array
     InetSocketAddress[] bep = new InetSocketAddress[b.length()];
     for (int i = 0; i < bep.length; i++) {
       bep[i] = InetSocketAddresses.forUaddrString(b.getString(i));
     }
 
-    return new Mirror(id, addrs, bep);
+    return new Mirror(id, addrs, bep[0]);
   }
 }

@@ -8,9 +8,9 @@ public class Mirror {
 
   private final UUID id;
   private final InetSocketAddress[] multipath;
-  private final InetSocketAddress[] bepMultipath;
+  private final InetSocketAddress bepMultipath;
 
-  public Mirror(UUID id, InetSocketAddress[] multipath, InetSocketAddress[] bep) {
+  public Mirror(UUID id, InetSocketAddress[] multipath, InetSocketAddress bep) {
     this.id = id;
     this.multipath = multipath;
     this.bepMultipath = bep;
@@ -20,7 +20,7 @@ public class Mirror {
     return id;
   }
 
-  public InetSocketAddress[] getBepAddress() {
+  public InetSocketAddress getBepAddress() {
     return bepMultipath;
   }
 

@@ -51,7 +51,7 @@ case $1 in
       podman run --restart=always --pod=${POD_NAME} -d --name ds0 \
           -e ZOOKEEPER_CONNECT=127.0.0.1:2181 \
           -e NFS_PORT=2052 \
-          -e BEP_PORT=1711 \
+          -e BEP_PORT=127.0.0.1:1711 \
           -e HAZELCAST_HOST=127.0.0.1 \
           -e LOCALADDRESS=${LOCAL_ADDRESS} \
           dcache/pnfs-community ds
@@ -59,7 +59,7 @@ case $1 in
       podman run --restart=always --pod=${POD_NAME} -d --name ds1 \
           -e ZOOKEEPER_CONNECT=127.0.0.1:2181 \
           -e NFS_PORT=2053 \
-          -e BEP_PORT=1712 \
+          -e BEP_PORT=127.0.0.1:1712 \
           -e HAZELCAST_HOST=127.0.0.1 \
           -e LOCALADDRESS=${LOCAL_ADDRESS} \
           dcache/pnfs-community ds

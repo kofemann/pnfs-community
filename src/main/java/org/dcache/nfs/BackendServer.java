@@ -1,9 +1,11 @@
 package org.dcache.nfs;
 
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.net.SocketAddress;
+
 import org.dcache.nfs.bep.DataServerBepServiceGrpc;
 import org.dcache.nfs.bep.RemoveFileRequest;
 import org.dcache.nfs.bep.RemoveFileResponse;
@@ -17,9 +19,9 @@ public class BackendServer {
   private final IoChannelCache fs;
   private final Server server;
 
-  public BackendServer(int port, IoChannelCache fs) throws IOException {
+  public BackendServer(SocketAddress socketAddress, IoChannelCache fs) throws IOException {
     this.fs = fs;
-    server = ServerBuilder.forPort(port).addService(new DataServerBepService()).build();
+    server = NettyServerBuilder.forAddress(socketAddress).addService(new DataServerBepService()).build();
     server.start();
   }
 

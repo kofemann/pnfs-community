@@ -525,8 +525,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
       addr = mirror.getMultipath();
       channel =
           ManagedChannelBuilder.forAddress(
-                  mirror.getBepAddress()[0].getAddress().getHostAddress(),
-                  mirror.getBepAddress()[0].getPort())
+                  mirror.getBepAddress().getAddress().getHostAddress(),
+                  mirror.getBepAddress().getPort())
               .usePlaintext() // disable SSL
               .build();
 

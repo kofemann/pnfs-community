@@ -85,7 +85,7 @@
         <property name="ioChannelCache" ref="ds-data-pool" />
         <property name="idFile" value="/pnfs/etc/ds-id" />
         <property name="port" value="${NFS_PORT}" />
-        <property name="bepPort" value="${BEP_PORT}" />
+        <property name="bepSocket" value="${BEP_PORT}" />
     </bean>
 
     <beans profile="krb5">
