@@ -642,23 +642,6 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     return (stat.getIno() << 32 | name.hashCode()) & 0x7FffffffffffffffL;
   }
 
-  public String getInodeLayout(Inode inode) throws ChimeraNFSException, IOException {
-    FsInode fsInode = toFsInode(inode);
-
-    if (fsInode.type() != FsInodeType.INODE || fsInode.getLevel() != 0) {
-      throw new LayoutUnavailableException();
-    }
-
-    return _fs.getInodeLocations(fsInode, StorageGenericLocation.DISK).stream()
-        .map(StorageLocatable::location)
-        .findFirst()
-        .orElse(null);
-  }
-
-  public boolean setInodeLayout(Inode inode, String layout) throws IOException {
-    return _fs.setInodeLocation(toFsInode(inode), 1, layout);
-  }
-
   @Override
   public byte[] getXattr(Inode inode, String attr) throws IOException {
     FsInode fsInode = toFsInode(inode);
