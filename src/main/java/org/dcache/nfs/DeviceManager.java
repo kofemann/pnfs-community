@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 - 2020 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2009 - 2021 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -23,6 +23,8 @@ import com.google.protobuf.ByteString;
 import com.hazelcast.map.IMap;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.NoXattrException;
 import org.dcache.nfs.v4.xdr.layout4;
@@ -53,7 +55,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.dcache.nfs.bep.DataServerBepServiceGrpc;
 import org.dcache.nfs.bep.RemoveFileRequest;
 import org.dcache.nfs.bep.RemoveFileResponse;
@@ -116,7 +117,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
   private CuratorFramework zkCurator;
 
   /** Path cache to node with all on-line DSes. */
-  private PathChildrenCache dsNodeCache;
+  private CuratorCache dsNodeCache;
 
   /** Layout type specific driver. */
   private final Map<layouttype4, LayoutDriver> _supportedDrivers;
@@ -174,20 +175,20 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
     _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
 
-    dsNodeCache = new PathChildrenCache(zkCurator, Paths.ZK_PATH, true);
+    dsNodeCache = CuratorCache.build(zkCurator, Paths.ZK_PATH);
     dsNodeCache
-        .getListenable()
+        .listenable()
         .addListener(
-            (c, e) -> {
-              switch (e.getType()) {
-                case CHILD_ADDED:
-                case CHILD_UPDATED:
-                  _log.info("Adding DS: {}", e.getData().getPath());
-                  addDS(e.getData().getPath());
+            (t, o, n) -> {
+              switch (t) {
+                case NODE_CREATED:
+                case NODE_CHANGED:
+                  _log.info("Adding DS: {}", n.getPath());
+                  addDS(n);
                   break;
-                case CHILD_REMOVED:
-                  _log.info("Removing DS: {}", e.getData().getPath());
-                  removeDS(e.getData().getPath());
+                case NODE_DELETED:
+                  _log.info("Removing DS: {}", o.getPath());
+                  removeDS(o);
                   break;
               }
             });
@@ -382,16 +383,15 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     return _supportedDrivers.keySet();
   }
 
-  private void addDS(String node) throws Exception {
-    byte[] data = zkCurator.getData().forPath(node);
-    Mirror mirror = ZkDataServer.stringToString(data);
+  private void addDS(ChildData childData) {
+    Mirror mirror = ZkDataServer.stringToString(childData.getData());
 
     DS ds = new DS(mirror);
     _deviceMap.put(deviceidOf(mirror.getId()), ds);
   }
 
-  private void removeDS(String node) throws Exception {
-    String id = node.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+  private void removeDS(ChildData childData) {
+    String id = childData.getPath().substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
     UUID deviceId = UUID.fromString(id);
     DS ds = _deviceMap.remove(deviceidOf(deviceId));
     if (ds != null) {
