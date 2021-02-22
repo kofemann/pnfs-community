@@ -101,7 +101,7 @@ public class DataServer {
       return getLocalAddresses(port);
     } else {
       return Splitter.on(',').trimResults().omitEmptyStrings().splitToList(suppliedAddress).stream()
-          .map(InetAddresses::forUriString)
+          .map(InetAddresses::forString)
           .map(a -> new InetSocketAddress(a, port))
           .toArray(InetSocketAddress[]::new);
     }
