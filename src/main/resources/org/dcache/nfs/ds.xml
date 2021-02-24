@@ -88,14 +88,4 @@
         <property name="bepSocket" value="${BEP_PORT}" />
     </bean>
 
-    <beans profile="krb5">
-        <bean id="rpc-login-service" class="org.dcache.nfs.RpcGssLogin"/>
-
-        <bean id="gss-manager" class="org.dcache.oncrpc4j.rpc.gss.GssSessionManager">
-            <constructor-arg index="0" ref="rpc-login-service" />
-            <constructor-arg index="1" value="${KRB5_SVC_PRINCIPAL}" />
-            <constructor-arg index="2" value="/etc/pnfs/krb5.keytab" />
-        </bean>
-    </beans>
-
 </beans>

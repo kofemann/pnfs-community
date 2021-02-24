@@ -1,7 +1,7 @@
 FROM alpine:3.13
 
 # Add JRE
-RUN apk --no-cache add openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+RUN apk --no-cache add krb5-libs openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # Run community as user 'pnfs'
 RUN addgroup pnfs && adduser -S -G pnfs pnfs
