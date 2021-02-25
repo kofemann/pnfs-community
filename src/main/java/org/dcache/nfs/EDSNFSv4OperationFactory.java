@@ -138,20 +138,18 @@ public class EDSNFSv4OperationFactory extends AbstractOperationExecutor {
       if (!Arrays.equals(fh, inode.toNfsHandle())) {
         throw new BadHandleException();
       }
-      boolean eof = false;
+
       long offset = _args.opread.offset.value;
       int count = _args.opread.count.value;
       ByteBuffer bb = ByteBuffer.allocateDirect(count);
       FileChannel in = fsc.get(inode).getChannel();
       int bytesReaded = in.read(bb, offset);
       bb.flip();
-      if (bytesReaded < 0) {
-        eof = true;
-      }
-      res.status = nfsstat.NFS_OK;
+
       res.resok4 = new READ4resok();
       res.resok4.data = bb;
-      res.resok4.eof = eof;
+      res.resok4.eof = (offset + bytesReaded == in.size()) ||  (bytesReaded < 0);
+      res.status = nfsstat.NFS_OK;
     }
   }
 
