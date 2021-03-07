@@ -117,7 +117,7 @@
 
     <bean id="idmapd" class="org.dcache.nfs.v4.SimpleIdMap" />
 
-    <bean id="state-handler-id-factory" class="org.dcache.nfs.zk.ZkNfsStateHaldler">
+    <bean id="state-handler-id-factory" class="org.dcache.nfs.zk.ZkNfsStateHandler">
         <property name="base" value="/nfs/mds" />
         <property name="curatorFramework" ref="zk-curator" />
         <property name="storeName" value="state-handler-id" />

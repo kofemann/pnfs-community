@@ -9,7 +9,7 @@ import org.dcache.nfs.v4.NFSv4StateHandler;
 
 import java.nio.charset.StandardCharsets;
 
-public class ZkNfsStateHaldler extends NFSv4StateHandler {
+public class ZkNfsStateHandler extends NFSv4StateHandler {
 
   String base;
   String identifier;
