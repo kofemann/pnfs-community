@@ -6,7 +6,7 @@ version: '2.1'
 services:
 
   zk:
-    image: zookeeper:3.5
+    image: zookeeper:3.6
     environment:
       - ZOO_LOG4J_PROP=WARN,CONSOLE
     mem_limit: 512m
