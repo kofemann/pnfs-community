@@ -25,6 +25,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.dcache.nfs.bep.ReadDataRequest;
+import org.dcache.nfs.bep.ReadDataResponse;
+import org.dcache.nfs.bep.WriteDataRequest;
+import org.dcache.nfs.bep.WriteDataResponse;
 import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.NoXattrException;
 import org.dcache.nfs.v4.xdr.layout4;
@@ -42,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -475,6 +480,9 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
       }
     }
 
+    if (iomode == layoutiomode4.LAYOUTIOMODE4_READ && layoutType == layouttype4.LAYOUT4_NFSV4_1_FILES) {
+      return new deviceid4[] {deviceId[0]};
+    }
     return deviceId;
   }
 
@@ -515,6 +523,30 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
   }
 
   @Override
+  public int read(Inode inode, ByteBuffer data, long offset) throws IOException {
+    deviceid4[] mirrors = getBoundDeviceId(inode);
+    DS ds = _deviceMap.get(mirrors[0]);
+    ByteBuffer d = ds.readData(inode, offset, data.remaining());
+    int n = d.remaining();
+    data.put(d);
+    return n;
+  }
+
+  @Override
+  public WriteResult write(Inode inode, ByteBuffer data, long offset, StabilityLevel stabilityLevel) throws IOException {
+
+    deviceid4[] mirrors = getOrBindDeviceId(inode, layoutiomode4.LAYOUTIOMODE4_RW, layouttype4.LAYOUT4_FLEX_FILES);
+
+    int n = data.remaining();
+    for(deviceid4 mirror: mirrors) {
+      DS ds = _deviceMap.get(mirror);
+      ds.writeData(inode, offset, data);
+    }
+
+    return new WriteResult(StabilityLevel.DATA_SYNC, n);
+  }
+
+  @Override
   protected VirtualFileSystem delegate() {
     return fs;
   }
@@ -548,6 +580,32 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
 
       SetFileSizeResponse response = blockingStub.setFileSize(request);
       nfsstat.throwIfNeeded(response.getStatus());
+    }
+
+
+    ByteBuffer readData(Inode inode, long offset, int length) throws ChimeraNFSException {
+      ReadDataRequest request = ReadDataRequest.newBuilder()
+              .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+              .setOffset(offset)
+              .setLength(length)
+              .build();
+
+      ReadDataResponse response = blockingStub.readData(request);
+      nfsstat.throwIfNeeded(response.getStatus());
+      return response.getData().asReadOnlyByteBuffer();
+    }
+
+    int writeData(Inode inode, long offset, ByteBuffer data) throws ChimeraNFSException {
+
+      WriteDataRequest request = WriteDataRequest.newBuilder()
+              .setFh(ByteString.copyFrom(inode.toNfsHandle()))
+              .setOffset(offset)
+              .setData(ByteString.copyFrom(data))
+              .build();
+
+      WriteDataResponse response = blockingStub.writeData(request);
+      nfsstat.throwIfNeeded(response.getStatus());
+      return response.getHow();
     }
 
     void removeFile(Inode inode) throws ChimeraNFSException {
