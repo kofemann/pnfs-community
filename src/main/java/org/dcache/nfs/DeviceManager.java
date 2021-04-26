@@ -100,6 +100,9 @@ import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import static org.dcache.nfs.Utils.deviceidOf;
 
 /** the instance of this class have to ask Pool Manager for a pool and return it to the client. */
@@ -163,6 +166,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     mdsStateIdCache = openStateIdCache;
   }
 
+  @PostConstruct
   public void init() throws Exception {
 
     fs = new VfsCache(innter, cacheConfig);
@@ -200,8 +204,8 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
     dsNodeCache.start();
   }
 
+  @PreDestroy
   public void shutdown() throws IOException {
-
     dsNodeCache.close();
   }
   /*
