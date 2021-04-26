@@ -389,10 +389,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
   }
 
   private void addDS(ChildData childData) {
-    Mirror mirror = ZkDataServer.stringToString(childData.getData());
-
-    DS ds = new DS(mirror);
-    _deviceMap.put(deviceidOf(mirror.getId()), ds);
+    if (childData.getData().length > 0) {
+      Mirror mirror = ZkDataServer.stringToString(childData.getData());
+      _deviceMap.put(deviceidOf(mirror.getId()), new DS(mirror));
+    }
   }
 
   private void removeDS(ChildData childData) {
