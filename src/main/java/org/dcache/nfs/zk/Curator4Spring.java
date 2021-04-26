@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 - 2018 Deutsches Elektronen-Synchroton,
+ * Copyright (c) 2015 - 2021 Deutsches Elektronen-Synchroton,
  * Member of the Helmholtz Association, (DESY), HAMBURG, GERMANY
  *
  * This library is free software; you can redistribute it and/or modify
@@ -33,15 +33,9 @@ public class Curator4Spring {
   }
 
   public CuratorFramework getCurator() {
-
-    try {
-      final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-      CuratorFramework client = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
-      client.start();
-      return client;
-    } catch (Throwable e) {
-      e.printStackTrace();
-      throw e;
-    }
+    final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+    CuratorFramework client = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
+    client.start();
+    return client;
   }
 }
