@@ -8,10 +8,12 @@ import org.dcache.nfs.v4.OperationExecutor;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
 import org.dcache.nfs.v4.xdr.nfs_resop4;
-import org.dcache.oncrpc4j.rpc.OncRpcException;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.jmx.JmxReporter;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 /** An {@link OperationExecutor} decorator that collect request execution statistics. */
 public class MetricAwareOperationExecutor implements OperationExecutor {
@@ -44,10 +46,12 @@ public class MetricAwareOperationExecutor implements OperationExecutor {
     }
   }
 
+  @PostConstruct
   public void start() {
     reporter.start();
   }
 
+  @PreDestroy
   public void shutdown() {
     reporter.stop();
   }

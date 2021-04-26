@@ -109,8 +109,7 @@
         <description>MDS operation executor</description>
     </bean>
 
-    <bean id="mds-op-executor" class="org.dcache.nfs.MetricAwareOperationExecutor"
-        init-method="start" destroy-method="shutdown">
+    <bean id="mds-op-executor" class="org.dcache.nfs.MetricAwareOperationExecutor">
         <description>MDS operation executor with Metrics</description>
         <constructor-arg ref="mds-op-executor-inner"/>
     </bean>
