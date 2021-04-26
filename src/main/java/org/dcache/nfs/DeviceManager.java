@@ -415,7 +415,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
    * @param inode inode of the file
    * @return array of device ids.
    */
-  private deviceid4[] getBoundDeviceId(Inode inode) throws ChimeraNFSException, IOException {
+  private deviceid4[] getBoundDeviceId(Inode inode) throws IOException {
 
     try {
       byte[] combinedLocation = fs.getXattr(inode, PNFS_LOCATION_XATTR);
@@ -448,7 +448,7 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
    * @return array of device ids.
    */
   private deviceid4[] getOrBindDeviceId(Inode inode, int iomode, layouttype4 layoutType)
-      throws ChimeraNFSException, IOException {
+      throws IOException {
 
     // independent from read or write, check existing location first
     deviceid4[] deviceId = getBoundDeviceId(inode);

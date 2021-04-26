@@ -127,7 +127,7 @@ public class EDSNFSv4OperationFactory extends AbstractOperationExecutor {
 
     @Override
     public void process(CompoundContext context, nfs_resop4 result)
-        throws ChimeraNFSException, IOException {
+        throws IOException {
       final READ4res res = result.opread;
       Inode inode = context.currentInode();
       stateid4 stateid = _args.opread.stateid;
@@ -161,7 +161,7 @@ public class EDSNFSv4OperationFactory extends AbstractOperationExecutor {
 
     @Override
     public void process(CompoundContext context, nfs_resop4 result)
-        throws ChimeraNFSException, IOException, OncRpcException {
+        throws IOException {
       final COMMIT4res res = result.opcommit;
       Inode inode = context.currentInode();
       RandomAccessFile out = fsc.get(inode);

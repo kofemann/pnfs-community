@@ -35,7 +35,7 @@ public class MetricAwareOperationExecutor implements OperationExecutor {
 
   @Override
   public nfs_resop4 execute(CompoundContext context, nfs_argop4 arg)
-      throws IOException, OncRpcException {
+      throws IOException {
 
     final Timer requests = metrics.timer(nfs_opnum4.toString(arg.argop));
     final Timer.Context time = requests.time();
