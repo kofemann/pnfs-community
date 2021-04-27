@@ -22,13 +22,8 @@
 
     <import resource="community-common.xml"/>
 
-    <!-- create data directory for DS -->
-    <bean id="ds-data-dir" class="java.io.File" init-method="mkdirs">
+    <bean id="ds-data-pool" class="org.dcache.nfs.IoChannelCache">
         <constructor-arg value="/var/lib/pnfs/data" />
-    </bean>
-
-    <bean id="ds-data-pool" class="org.dcache.nfs.IoChannelCache" init-method="init">
-        <property name="base" ref="ds-data-dir" />
         <property name="maxSize" value="1024" />
         <property name="lastAccess" value="30" />
     </bean>

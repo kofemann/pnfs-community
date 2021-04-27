@@ -29,10 +29,22 @@ import org.dcache.nfs.vfs.Inode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
+
 /** */
 public class IoChannelCache {
 
   private static final Logger _log = LoggerFactory.getLogger(IoChannelCache.class);
+
+  public IoChannelCache(String path) {
+    File base = new File(path);
+    if (!base.exists()) {
+      base.mkdirs();
+    } else if (!base.isDirectory()) {
+      throw new IllegalArgumentException(base + " : exist and not a directory");
+    }
+    _base = base;
+  }
 
   private static class FileChannelSupplier extends CacheLoader<Inode, RandomAccessFile> {
 
@@ -80,11 +92,8 @@ public class IoChannelCache {
   private LoadingCache<Inode, RandomAccessFile> _cache;
   private int _maxSize;
   private int _lastAccess;
-  private File _base;
+  private final File _base;
 
-  public void setBase(File base) {
-    this._base = base;
-  }
 
   public void setMaxSize(int maxSize) {
     this._maxSize = maxSize;
@@ -94,6 +103,7 @@ public class IoChannelCache {
     _lastAccess = timeInSec;
   }
 
+  @PostConstruct
   public void init() {
     _cache =
         CacheBuilder.newBuilder()
