@@ -39,7 +39,7 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <version.hazelcast>4.1.10</version.hazelcast>
+        <version.hazelcast>5.3.0</version.hazelcast>
         <version.curator>5.1.0</version.curator>
         <version.grpc>1.35.0</version.grpc>
         <spring-integration-kafka.version>3.3.1.RELEASE</spring-integration-kafka.version>
