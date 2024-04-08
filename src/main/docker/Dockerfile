@@ -1,10 +1,10 @@
-FROM alpine:3.13
+FROM almalinux:9-minimal
 
 # Add JRE
-RUN apk --no-cache add krb5-libs openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+RUN microdnf -y install java-17-openjdk-headless shadow-utils
 
 # Run community as user 'pnfs'
-RUN addgroup pnfs && adduser -S -G pnfs pnfs
+RUN groupadd pnfs && useradd -r -g pnfs pnfs
 
 # add external files into container at the build time
 COPY run.sh /run.sh
