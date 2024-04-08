@@ -6,7 +6,7 @@ version: '2.1'
 services:
 
   zk:
-    image: zookeeper:3.6
+    image: zookeeper:3.8
     environment:
       - ZOO_LOG4J_PROP=WARN,CONSOLE
     mem_limit: 512m
@@ -37,8 +37,6 @@ services:
     - LOG4J_LOGGER_KAFKA=WARN
     - LOG4J_LOGGER_ORG_APACHE_KAFKA=WARN
     - LOG4J_LOGGER_ORG_APACHE_ZOOKEEPER=WARN
-    volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
   hz:
