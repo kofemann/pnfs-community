@@ -127,8 +127,12 @@
 
     <bean id="state-handler" class="org.dcache.nfs.v4.NFSv4StateHandler">
         <description>NFSv4 client and state handler</description>
-        <constructor-arg index="0" value="${nfs.lease.time}"/>
-        <constructor-arg index="1" ref="state-handler-id"/>
+        <constructor-arg>
+            <bean class="java.time.Duration" factory-method="ofSeconds">
+                <constructor-arg index="0" value="${nfs.lease.time}"/>
+            </bean>
+        </constructor-arg>
+        <constructor-arg ref="state-handler-id"/>
         <constructor-arg>
             <bean class="org.dcache.nfs.v4.BerkeleyDBClientStore" destroy-method="close">
                 <constructor-arg value="${nfs.state.store}" />

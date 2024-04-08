@@ -1,12 +1,7 @@
 package org.dcache.nfs;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.file.FileAlreadyExistsException;
@@ -18,13 +13,16 @@ import java.util.UUID;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
+import static org.dcache.nfs.Utils.getLocalAddresses;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
-import org.dcache.oncrpc4j.rpc.net.InetSocketAddresses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.dcache.nfs.Utils.getLocalAddresses;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.net.HostAndPort;
+import com.google.common.net.InetAddresses;
 
 public class DataServer {
 
@@ -72,6 +70,7 @@ public class DataServer {
     zkNode =
         zkCurator
             .create()
+            .orSetData()
             .creatingParentContainersIfNeeded()
             .withMode(CreateMode.EPHEMERAL)
             .forPath(

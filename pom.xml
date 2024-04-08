@@ -42,12 +42,12 @@
         <version.hazelcast>4.1.10</version.hazelcast>
         <version.curator>5.1.0</version.curator>
         <version.grpc>1.53.0</version.grpc>
-        <spring-integration-kafka.version>3.3.1.RELEASE</spring-integration-kafka.version>
-        <spring-kafka.version>2.5.4.RELEASE</spring-kafka.version>
-        <kafka.version>2.7.0</kafka.version>
+        <spring-integration-kafka.version>5.5.11</spring-integration-kafka.version>
+        <spring-kafka.version>2.9.11</spring-kafka.version>
+        <kafka.version>3.1.0</kafka.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <canl.version>2.6.0</canl.version>
-        <spring-context.version>5.2.6.RELEASE</spring-context.version>
+        <canl.version>2.8.3</canl.version>
+        <spring-context.version>5.3.27</spring-context.version>
         <metrics.version>4.0.6</metrics.version>
     </properties>
 
@@ -57,14 +57,14 @@
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
-                <version>1.7.0</version>
+                <version>1.7.1</version>
             </extension>
         </extensions>
         <plugins>
             <plugin>
                 <groupId>org.gaul</groupId>
                 <artifactId>modernizer-maven-plugin</artifactId>
-                <version>2.4.0</version>
+                <version>2.7.0</version>
                 <configuration>
                     <javaVersion>${java.version}</javaVersion>
                     <failOnViolations>false</failOnViolations>
@@ -82,7 +82,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <executable>/usr/lib/jvm/java-17/bin/javac</executable>
                     <showDeprecation>true</showDeprecation>
@@ -94,7 +94,7 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <version>0.42.1</version>
+                <version>0.44.0</version>
                 <configuration>
                     <images>
                         <image>
@@ -154,7 +154,7 @@
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>3.4.3</version>
+            <version>5.0.1</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -221,7 +221,7 @@
         <dependency>
             <groupId>org.dcache</groupId>
             <artifactId>nfs4j-spring</artifactId>
-            <version>0.23.0-SNAPSHOT</version>
+            <version>0.25.0</version>
         </dependency>
 
         <dependency>
@@ -252,7 +252,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20230227</version>
+            <version>20231013</version>
         </dependency>
 
         <dependency>
@@ -357,7 +357,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-boringssl-static</artifactId>
-            <version>2.0.25.Final</version>
+            <version>2.0.59.Final</version>
         </dependency>
 
         <dependency>
@@ -375,7 +375,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>30.1-jre</version>
+            <version>33.0.0-jre</version>
         </dependency>
     </dependencies>
 
