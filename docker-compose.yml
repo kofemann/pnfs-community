@@ -2,14 +2,13 @@
 # requires .env file with
 # - LOCAL_ADDRESS : the ip address of the docker host
 
-version: '2.1'
+version: '3'
 services:
 
   zk:
-    image: zookeeper:3.8
+    image: zookeeper:3.9
     environment:
       - ZOO_LOG4J_PROP=WARN,CONSOLE
-    mem_limit: 512m
     ulimits:
       nproc: 65535
       nofile:
@@ -23,12 +22,6 @@ services:
     - zk
     ports:
     - "9092:9092"
-    mem_limit: 512m
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 4096
-        hard: 8192
     environment:
     - KAFKA_BROKER_ID=1
     - KAFKA_ADVERTISED_HOST_NAME=${LOCAL_ADDRESS}
@@ -41,12 +34,6 @@ services:
 
   hz:
     image: hazelcast/hazelcast:4.1
-    mem_limit: 512m
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 4096
-        hard: 8192
     environment:
     - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml
     volumes:
@@ -81,11 +68,6 @@ services:
     - ./hostkey.pem:/hostkey.pem
     - ./hostcert.pem:/hostcert.pem
     - ./ca-chain.pem:/ca-chain.pem
-    logging:
-      driver: json-file
-      options:
-        max-size: "1m"
-        max-file: "5"
     restart: unless-stopped
 
   ds1:
@@ -110,11 +92,6 @@ services:
     - ./hostkey.pem:/hostkey.pem
     - ./hostcert.pem:/hostcert.pem
     - ./ca-chain.pem:/ca-chain.pem
-    logging:
-      driver: json-file
-      options:
-        max-size: "1m"
-        max-file: "5"
     restart: unless-stopped
 
   ds2:
@@ -139,9 +116,4 @@ services:
     - ./hostkey.pem:/hostkey.pem
     - ./hostcert.pem:/hostcert.pem
     - ./ca-chain.pem:/ca-chain.pem
-    logging:
-      driver: json-file
-      options:
-        max-size: "1m"
-        max-file: "5"
     restart: unless-stopped
