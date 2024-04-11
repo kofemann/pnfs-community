@@ -6,37 +6,18 @@ A simple NFSv4.1/pNFS community for testing and demonstration.
 
 ### Requirements
 
-- Java 11
+- Java 17
 - Apache maven 3.3
-- docker (optional)
+- docker + docker-compose or podman + podman-compose
 
 ## Running
 
-The pNFS community requires apache zookeeper and apache kafka to run.
-The location to the services can be configured through environment variables:
-
-```sh
-export KAFKA_BOOTSTRAP_SERVER=kafka:9092
-export ZOOKEEPER_CONNECT=zk:2181
-```
-
-### As stand-alone
-
-```sh
-java -jar chimera-nfs-0.0.1-SNAPSHOT.jar oncrpcsvc.xml
-```
-
-where **oncrpcsvc.xml** is spring config file to start the server.
-
-### Kubernetes deployment
-
-A special set of [deployment scripts](https://github.com/kofemann/pnfs-community-k8s)
 
 ### As docker container
 
 For a quick start, use provided **docker-compose.yml** file. As
-pNFS DSes have to publish their IP addresses, add an .env file
-with the IP address which have to be offered to the clients:
+pNFS DSes have to publish their IP addresses, add .env file
+with the IP address which has to be offered to the clients:
 
 ```property
 # example .env file
@@ -51,7 +32,7 @@ docker-compose up -d
 or
 
 ```sh
-docker-compose up --scale ds=<N> -d
+podman compose up -d
 ```
 
 As it's not possible for code inside the container to discover which IP address to use,
@@ -59,9 +40,6 @@ you have to adjust **LOCALADDRESS** environment variable.
 
 The provided **docker-compose.yml** file comes with pre-configured zookeeper, kafka for
 layout stats processing and hazelcast cache for MDS<->DS state validation.
-
-to start **N** data servers. NOTICE: if number of data servers more than one (1)
-and flexfiles layout used then MDS will offer to write into two (2) DSes (mirroring).
 
 #### Layout statistics
 
