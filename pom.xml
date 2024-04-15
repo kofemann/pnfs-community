@@ -206,7 +206,7 @@
         <dependency>
             <groupId>org.dcache</groupId>
             <artifactId>oncrpc4j-spring</artifactId>
-            <version>3.1.0</version>
+            <version>3.3.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
