@@ -33,7 +33,7 @@ services:
     restart: unless-stopped
 
   hz:
-    image: hazelcast/hazelcast:4.1
+    image: hazelcast/hazelcast:5.3-slim-jdk17
     environment:
     - JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml
     volumes:
