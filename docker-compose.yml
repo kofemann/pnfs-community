@@ -9,11 +9,6 @@ services:
     image: zookeeper:3.9
     environment:
       - ZOO_LOG4J_PROP=WARN,CONSOLE
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 4096
-        hard: 8192
     restart: unless-stopped
 
   kafka:
