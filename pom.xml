@@ -46,7 +46,7 @@
         <spring-kafka.version>2.9.11</spring-kafka.version>
         <kafka.version>3.1.0</kafka.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <canl.version>2.8.3</canl.version>
+        <ssl-kickstart.version>8.3.4</ssl-kickstart.version>
         <spring-context.version>5.3.27</spring-context.version>
         <metrics.version>4.0.6</metrics.version>
     </properties>
@@ -367,11 +367,16 @@
         </dependency>
 
         <dependency>
-            <groupId>eu.eu-emi.security</groupId>
-            <artifactId>canl</artifactId>
-            <version>${canl.version}</version>
+            <groupId>io.github.hakky54</groupId>
+            <artifactId>sslcontext-kickstart</artifactId>
+            <version>${ssl-kickstart.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.hakky54</groupId>
+            <artifactId>sslcontext-kickstart-for-pem</artifactId>
+            <version>${ssl-kickstart.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

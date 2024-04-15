@@ -1,30 +1,29 @@
 package org.dcache.nfs;
 
-import eu.emi.security.authn.x509.X509CertChainValidatorExt;
-import eu.emi.security.authn.x509.helpers.ssl.SSLTrustManager;
-import eu.emi.security.authn.x509.impl.CertificateUtils;
-import eu.emi.security.authn.x509.impl.DirectoryCertChainValidator;
-import eu.emi.security.authn.x509.impl.PEMCredential;
-import java.util.Collections;
-import javax.net.ssl.KeyManager;
+import java.nio.file.Paths;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.net.ssl.X509ExtendedTrustManager;
+import nl.altindag.ssl.SSLFactory;
+import nl.altindag.ssl.pem.util.PemUtils;
 import org.springframework.beans.factory.FactoryBean;
 
 /** */
 public class SslContextFactoryBean implements FactoryBean<SSLContext> {
 
-  private String certFilePath;
-  private String keyFilePath;
+  private String certificateFile;
+  private String certificateKeyFile;
   private char[] keyFilePass;
-  private String trustedCaBundle;
+  private String trustStore;
+
+  private boolean insecure;
 
   public void setCertFilePath(String certFilePath) {
-    this.certFilePath = certFilePath;
+    this.certificateFile = certFilePath;
   }
 
   public void setKeyFilePath(String keyFilePath) {
-    this.keyFilePath = keyFilePath;
+    this.certificateKeyFile = keyFilePath;
   }
 
   public void setKeyFilePass(char[] keyFilePass) {
@@ -32,28 +31,29 @@ public class SslContextFactoryBean implements FactoryBean<SSLContext> {
   }
 
   public void setTrustedCaBundle(String trustedCaBundle) {
-    this.trustedCaBundle = trustedCaBundle;
+    this.trustStore = trustedCaBundle;
+  }
+
+  public void setInsecure(boolean insecure) {
+    this.insecure = insecure;
   }
 
   @Override
   public SSLContext getObject() throws Exception {
-    X509CertChainValidatorExt certificateValidator =
-        new DirectoryCertChainValidator(
-            Collections.singletonList(trustedCaBundle),
-            CertificateUtils.Encoding.PEM,
-            -1,
-            5000,
-            null);
 
-    PEMCredential serviceCredentials = new PEMCredential(keyFilePath, certFilePath, keyFilePass);
+    X509ExtendedKeyManager keyManager =
+        PemUtils.loadIdentityMaterial(Paths.get(certificateFile), Paths.get(certificateKeyFile));
+    X509ExtendedTrustManager trustManager = PemUtils.loadTrustMaterial(Paths.get(trustStore));
 
-    KeyManager keyManager = serviceCredentials.getKeyManager();
-    KeyManager[] kms = new KeyManager[] {keyManager};
-    SSLTrustManager tm = new SSLTrustManager(certificateValidator);
+    var sslFactoryBuilder = SSLFactory.builder().withIdentityMaterial(keyManager);
 
-    SSLContext ctx = SSLContext.getInstance("TLS");
-    ctx.init(kms, new TrustManager[] {tm}, null);
-    return ctx;
+    if (insecure) {
+      sslFactoryBuilder = sslFactoryBuilder.withDummyTrustMaterial();
+    } else {
+      sslFactoryBuilder = sslFactoryBuilder.withTrustMaterial(trustManager);
+    }
+
+    return sslFactoryBuilder.build().getSslContext();
   }
 
   @Override
