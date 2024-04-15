@@ -82,14 +82,12 @@
 
     <bean id="zk-curator" factory-bean="zk-curator-factory" factory-method="getCurator" destroy-method="close"/>
 
-    <beans profile="tls">
-        <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
-            <description>SSL Context factory</description>
-            <property name="certFilePath" value="/hostcert.pem"/>
-            <property name="keyFilePath" value="/hostkey.pem"/>
-            <property name="trustedCaBundle" value="/ca-chain.pem"/>
-        </bean>
-    </beans>
+    <bean id="ssl-context-builder" class="org.dcache.nfs.SslContextFactoryBean">
+        <description>SSL Context factory</description>
+        <property name="certFilePath" value="/hostcert.pem"/>
+        <property name="keyFilePath" value="/hostkey.pem"/>
+        <property name="trustedCaBundle" value="/ca-chain.pem"/>
+    </bean>
 
     <beans profile="krb5">
         <bean id="rpc-login-service" class="org.dcache.nfs.RpcGssLogin"/>
