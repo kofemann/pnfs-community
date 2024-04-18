@@ -1,15 +1,21 @@
 package org.dcache.nfs;
 
 import java.nio.file.Paths;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
-import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.pem.util.PemUtils;
+import nl.altindag.ssl.util.TrustManagerUtils;
+import org.conscrypt.OpenSSLProvider;
 import org.springframework.beans.factory.FactoryBean;
 
 /** */
 public class SslContextFactoryBean implements FactoryBean<SSLContext> {
+
+
+  private static final OpenSSLProvider OPEN_SSL_PROVIDER = new OpenSSLProvider();
 
   private String certificateFile;
   private String certificateKeyFile;
@@ -43,17 +49,14 @@ public class SslContextFactoryBean implements FactoryBean<SSLContext> {
 
     X509ExtendedKeyManager keyManager =
         PemUtils.loadIdentityMaterial(Paths.get(certificateFile), Paths.get(certificateKeyFile));
-    X509ExtendedTrustManager trustManager = PemUtils.loadTrustMaterial(Paths.get(trustStore));
+    X509ExtendedTrustManager trustManager = insecure ?
+            TrustManagerUtils.createDummyTrustManager() :
+            PemUtils.loadTrustMaterial(Paths.get(trustStore));
 
-    var sslFactoryBuilder = SSLFactory.builder().withIdentityMaterial(keyManager);
+    SSLContext sslContext = SSLContext.getInstance("TLSv1.3", OPEN_SSL_PROVIDER);
+    sslContext.init(new KeyManager[]{keyManager}, new TrustManager[]{trustManager}, null);
 
-    if (insecure) {
-      sslFactoryBuilder = sslFactoryBuilder.withDummyTrustMaterial();
-    } else {
-      sslFactoryBuilder = sslFactoryBuilder.withTrustMaterial(trustManager);
-    }
-
-    return sslFactoryBuilder.build().getSslContext();
+    return sslContext;
   }
 
   @Override
