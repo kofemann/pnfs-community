@@ -2,7 +2,7 @@
 
 if [ $# != 1 ]
 then
-  echo "Usage `basename $0` <start|stop>"
+  echo "Usage `basename $0` <start|stop|logs|tail>"
   exit 1
 fi
 
@@ -20,7 +20,7 @@ case $1 in
 
       podman run --restart=always --pod=pnfs-community -d --name zk \
           -e ZOO_LOG4J_PROP=WARN,CONSOLE \
-          zookeeper:3.5
+          zookeeper:3.9
 
       podman run --restart=always --pod=${POD_NAME} -d --name kafka \
           -e KAFKA_BROKER_ID=1 \
@@ -35,7 +35,7 @@ case $1 in
       podman run --restart=always --pod=${POD_NAME} -d --name hz \
           -e JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml \
           -v ${PWD}/hazelcast.xml:/hazelcast.xml:z \
-          hazelcast/hazelcast:4.1
+          hazelcast/hazelcast:5.3-slim-jdk17
 
       podman run --pod=${POD_NAME} -d --name mds \
           -e ZOOKEEPER_CONNECT=127.0.0.1:2181 \
@@ -43,9 +43,12 @@ case $1 in
           -e HAZELCAST_HOST=127.0.0.1 \
           -e KAFKA_IOERR_TOPIC=ioerr -e KAFKA_IOSTAT_TOPIC=iostat \
           -e KAFKA_BOOTSTRAP_SERVER=127.0.0.1:9092 \
-          -v ${PWD}/exports:/pnfs/etc/exports:z \
-          -v ${PWD}/nfs.properties:/pnfs/etc/nfs.properties:z \
-          -v ${PWD}/chimera.properties:/pnfs/etc/chimera.properties:z \
+          -v ${PWD}/exports:/etc/pnfs/exports:z \
+          -v ${PWD}/nfs.properties:/etc/pnfs/nfs.properties:z \
+          -v ${PWD}/chimera.properties:/etc/pnfs/chimera.properties:z \
+          -v ${PWD}/hostkey.pem:/hostkey.pem:z \
+          -v ${PWD}/hostcert.pem:/hostcert.pem:z \
+          -v ${PWD}/ca-chain.pem:/ca-chain.pem:z \
           dcache/pnfs-community mds --with-layoutstats
 
       podman run --restart=always --pod=${POD_NAME} -d --name ds0 \
@@ -54,6 +57,9 @@ case $1 in
           -e BEP_PORT=127.0.0.1:1711 \
           -e HAZELCAST_HOST=127.0.0.1 \
           -e LOCALADDRESS=${LOCAL_ADDRESS} \
+          -v ${PWD}/hostkey.pem:/hostkey.pem:z \
+          -v ${PWD}/hostcert.pem:/hostcert.pem:z \
+          -v ${PWD}/ca-chain.pem:/ca-chain.pem:z \
           dcache/pnfs-community ds
 
       podman run --restart=always --pod=${POD_NAME} -d --name ds1 \
@@ -62,8 +68,17 @@ case $1 in
           -e BEP_PORT=127.0.0.1:1712 \
           -e HAZELCAST_HOST=127.0.0.1 \
           -e LOCALADDRESS=${LOCAL_ADDRESS} \
+          -v ${PWD}/hostkey.pem:/hostkey.pem:z \
+          -v ${PWD}/hostcert.pem:/hostcert.pem:z \
+          -v ${PWD}/ca-chain.pem:/ca-chain.pem:z \
           dcache/pnfs-community ds
     ;;
+  logs)
+      podman pod logs ${POD_NAME}
+      ;;
+  tail)
+      podman pod logs -f ${POD_NAME}
+      ;;
   stop)
     podman pod kill ${POD_NAME}
     podman pod rm ${POD_NAME}
