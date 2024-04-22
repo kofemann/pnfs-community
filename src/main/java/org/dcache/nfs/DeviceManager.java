@@ -19,30 +19,6 @@
  */
 package org.dcache.nfs;
 
-import com.google.protobuf.ByteString;
-import com.hazelcast.map.IMap;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.CuratorCache;
-import org.dcache.nfs.bep.ReadDataRequest;
-import org.dcache.nfs.bep.ReadDataResponse;
-import org.dcache.nfs.bep.WriteDataRequest;
-import org.dcache.nfs.bep.WriteDataResponse;
-import org.dcache.nfs.status.ExistException;
-import org.dcache.nfs.status.NoXattrException;
-import org.dcache.nfs.v4.xdr.layout4;
-import org.dcache.nfs.v4.xdr.stateid4;
-import org.dcache.nfs.v4.xdr.nfs_fh4;
-import org.dcache.nfs.v4.xdr.deviceid4;
-import org.dcache.nfs.v4.xdr.nfs4_prot;
-import org.dcache.nfs.v4.xdr.device_addr4;
-import org.dcache.nfs.vfs.VfsCache;
-import org.dcache.nfs.vfs.VfsCacheConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -50,7 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
-import org.dcache.nfs.status.NoEntException;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -59,14 +34,28 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
+import static org.dcache.nfs.Utils.deviceidOf;
 import org.dcache.nfs.bep.DataServerBepServiceGrpc;
+import org.dcache.nfs.bep.ReadDataRequest;
+import org.dcache.nfs.bep.ReadDataResponse;
 import org.dcache.nfs.bep.RemoveFileRequest;
 import org.dcache.nfs.bep.RemoveFileResponse;
 import org.dcache.nfs.bep.SetFileSizeRequest;
 import org.dcache.nfs.bep.SetFileSizeResponse;
+import org.dcache.nfs.bep.WriteDataRequest;
+import org.dcache.nfs.bep.WriteDataResponse;
 import org.dcache.nfs.status.DelayException;
+import org.dcache.nfs.status.ExistException;
 import org.dcache.nfs.status.LayoutTryLaterException;
+import org.dcache.nfs.status.NoEntException;
+import org.dcache.nfs.status.NoXattrException;
 import org.dcache.nfs.status.UnknownLayoutTypeException;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.FlexFileLayoutDriver;
@@ -78,6 +67,8 @@ import org.dcache.nfs.v4.NFSv41DeviceManager;
 import org.dcache.nfs.v4.NFSv4Defaults;
 import org.dcache.nfs.v4.NfsV41FileLayoutDriver;
 import org.dcache.nfs.v4.Stateids;
+import org.dcache.nfs.v4.ff.ff_layoutreturn4;
+import org.dcache.nfs.v4.ff.flex_files_prot;
 import org.dcache.nfs.v4.xdr.GETDEVICEINFO4args;
 import org.dcache.nfs.v4.xdr.GETDEVICELIST4args;
 import org.dcache.nfs.v4.xdr.LAYOUTCOMMIT4args;
@@ -85,25 +76,35 @@ import org.dcache.nfs.v4.xdr.LAYOUTERROR4args;
 import org.dcache.nfs.v4.xdr.LAYOUTGET4args;
 import org.dcache.nfs.v4.xdr.LAYOUTRETURN4args;
 import org.dcache.nfs.v4.xdr.LAYOUTSTATS4args;
-import org.dcache.nfs.v4.ff.ff_layoutreturn4;
-import org.dcache.nfs.v4.ff.flex_files_prot;
+import org.dcache.nfs.v4.xdr.device_addr4;
+import org.dcache.nfs.v4.xdr.deviceid4;
+import org.dcache.nfs.v4.xdr.layout4;
 import org.dcache.nfs.v4.xdr.layoutiomode4;
 import org.dcache.nfs.v4.xdr.layoutreturn_type4;
 import org.dcache.nfs.v4.xdr.layouttype4;
 import org.dcache.nfs.v4.xdr.length4;
+import org.dcache.nfs.v4.xdr.nfs4_prot;
+import org.dcache.nfs.v4.xdr.nfs_fh4;
 import org.dcache.nfs.v4.xdr.offset4;
+import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.v4.xdr.utf8str_mixed;
 import org.dcache.nfs.vfs.ForwardingFileSystem;
 import org.dcache.nfs.vfs.Inode;
 import org.dcache.nfs.vfs.Stat;
+import org.dcache.nfs.vfs.VfsCache;
+import org.dcache.nfs.vfs.VfsCacheConfig;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.zk.Paths;
 import org.dcache.nfs.zk.ZkDataServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import com.google.protobuf.ByteString;
+import com.hazelcast.map.IMap;
 
-import static org.dcache.nfs.Utils.deviceidOf;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 /** the instance of this class have to ask Pool Manager for a pool and return it to the client. */
 public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceManager {
@@ -400,7 +401,10 @@ public class DeviceManager extends ForwardingFileSystem implements NFSv41DeviceM
   }
 
   private void removeDS(ChildData childData) {
-    String id = childData.getPath().substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+    String id = childData.getPath();
+    if (!id.isEmpty()) {
+      id = id.substring(Paths.ZK_PATH_NODE.length() + Paths.ZK_PATH.length() + 1);
+    }
     UUID deviceId = UUID.fromString(id);
     DS ds = _deviceMap.remove(deviceidOf(deviceId));
     if (ds != null) {
