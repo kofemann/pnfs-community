@@ -16,7 +16,7 @@ case $1 in
 
   start)
       # create pod with exposed ports
-      podman pod create --name ${POD_NAME} -p 2049:2049 -p 2053:2053 -p 2052:2052 -p 9092:9092
+      podman pod create --name ${POD_NAME} -p 2049:2049 -p 2053:2053 -p 2052:2052 -p 9092:9092 -p 5432:5432
 
       podman run --restart=always --pod=pnfs-community -d --name zk \
           -e ZOO_LOG4J_PROP=WARN,CONSOLE \
@@ -36,6 +36,11 @@ case $1 in
           -e JAVA_OPTS=-Dhazelcast.config=/hazelcast.xml \
           -v ${PWD}/hazelcast.xml:/hazelcast.xml:z \
           hazelcast/hazelcast:5.3-slim-jdk17
+
+      podman run --restart=always --pod=${POD_NAME} -d --name pg \
+          -e POSTGRES_PASSWORD=let-me-in \
+          -e POSTGRES_USER=pnfs \
+          docker.io/library/postgres:16
 
       podman run --pod=${POD_NAME} -d --name mds \
           -e ZOOKEEPER_CONNECT=127.0.0.1:2181 \
