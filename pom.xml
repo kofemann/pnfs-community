@@ -41,7 +41,7 @@
 
         <version.hazelcast>5.3.7</version.hazelcast>
         <version.curator>5.1.0</version.curator>
-        <version.grpc>1.53.1</version.grpc>
+        <version.grpc>1.54.2</version.grpc>
         <spring-integration-kafka.version>5.5.11</spring-integration-kafka.version>
         <spring-kafka.version>2.9.11</spring-kafka.version>
         <kafka.version>3.1.0</kafka.version>
